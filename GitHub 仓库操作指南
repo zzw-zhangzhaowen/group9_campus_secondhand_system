@@ -1,1 +1,59 @@
+1.GitHub 仓库目录
+建议仓库使用以下结构：
+campus-secondhand/
+│
+├── backend_zhang/
+│   ├── user_service.py
+│   ├── item_service.py
+│   ├── user_repository.py
+│   ├── item_repository.py
+│   ├── validators.py
+│   ├── security.py
+│   └── data/
+│
+├── feature_du/
+│   ├── favorite_service.py
+│   ├── message_service.py
+│   ├── order_service.py
+│   ├── log_service.py
+│   └── data/
+│
+├── gui_gao/
+│   ├── app.py
+│   ├── login_page.py
+│   ├── home_page.py
+│   ├── item_page.py
+│   └── publish_page.py
+│
+├── tests_zhao/
+│   ├── test_user.py
+│   ├── test_item.py
+│   ├── test_feature.py
+│   └── fixtures/
+│
+├── docs_huang/
+│   ├── project_report_zh.md
+│   ├── project_report_en.md
+│   └── user_manual.md
+│
+├── contracts/
+│   ├── backend_api.md
+│   ├── feature_api.md
+│   └── data_schema.md
+│
+├── demo_data/
+├── .github/
+├── .gitignore
+├── README.md
+└── main.py
+
+2.成员负责目录
+成员负责目录负责内容
+ZHANG ZHAOWEN：backend_zhang/用户、商品、JSON 数据读写、数据校验
+DU YI：feature_du/收藏、留言、意向订单、操作日志
+GAO JINGYAN：gui_gao/Tkinter 图形界面
+ZHAO XIAOJUN：tests_zhao/单元测试、调试和异常测试
+HUANG BAIQI：docs_huang/项目报告、用户手册、PPT 和中英文文档
+
+3.公共接口文档放在：contracts/
 
