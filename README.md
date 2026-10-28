@@ -179,37 +179,7 @@ with tempfile.TemporaryDirectory() as tmp:
 
 ---
 
-## 8. 决策记录：商品状态是否改「三态 + 软删除」
-
-`backend_modification_v1.1.md` 第 3 点曾建议把 `status` 改成 `active / sold / removed` 三态并软删除。
-**最终结论：不采纳三态/软删除，采用「两态不变 + 独立只读归档」的 C 方案（v1.2 已实施）。**
-
-| 方案 | 结论 | 原因 |
-|---|---|---|
-| A 维持现状 | — | `is_item_active` 只能判断"没删没下架"，历史记录无法显示已删商品名称 |
-| B 三态 + 软删除 | ❌ 否 | 与需求文档第十三节冲突（状态只允许两态、删除后记录**永久移除不能恢复**），且要改 schema + 全部查询语义 + 4 个模块 |
-| C 两态 + 只读归档 | ✅ 采用 | `items.json` 依旧物理删除、语义零变化；`items_deleted.json` 只追加只读，既满足"不能恢复"，又能让收藏/留言/意向显示历史标题 |
-
-实施要点：
-
-1. `delete_item_permanently` 入口/返回值不变，只在删除前写一条快照；归档写失败则**拒绝删除**，保证"删了就有记录"；
-2. 新增 `is_item_deleted(item_id)`（7 字段摘要，含 `deleted` / `alive`）与 `list_deleted_items(limit)`（归档列表）；
-3. 归档文件与 `items.json` 同目录，测试传临时目录即隔离；`ItemService` 也支持显式 `deleted_file` 参数；
-4. 归档由 `backend_zhang` 独占维护，其他模块只能调上面两个只读接口；
-5. 契约变更按需求文档第二十六节格式记录在 `contracts/backend_api.md` 第 6 节 v1.2 条目。
-
-### v1.3 追加：商品 ID 严格单调
-
-C 方案落地后仍有一个遗留问题：删除后新商品可能复用腾出的 ID，旧收藏里保存的 `item_id` 会指向新商品。
-v1.3 用 `items_meta.json` 计数器解决（`backend_zhang/id_sequence.py`）：
-
-- 发号下限 = `max(计数器, 现有最大 ID + 1, 归档最大 item_id + 1)`，计数器丢失/被改小也不会撞号；
-- 对 GUI / feature_du 零改动（ID 本来就由后端独占分配），唯一可见差异是删除后新 ID 更大；
-- 计数器损坏时发布失败并提示修复，不崩溃、不覆盖原文件。
-
----
-
-## 9. Git 提交约定
+## 8. Git 提交约定
 
 `backend_zhang/data/users.json`、`items.json`、`items_deleted.json`、`items_meta.json`、
 `demo_data/*.json` 已在 `.gitignore` 中，
