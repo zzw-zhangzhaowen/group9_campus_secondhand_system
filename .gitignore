@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 正式数据不上传（只上传 *.example.json 模板）
+backend_zhang/data/users.json
+backend_zhang/data/items.json
+backend_zhang/data/items_deleted.json
+backend_zhang/data/items_meta.json
+backend_zhang/data/*.tmp
+backend_zhang/data/.*.tmp
+
+# 演示产物
+demo_data/*.json
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
