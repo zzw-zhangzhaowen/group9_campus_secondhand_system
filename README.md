@@ -2,13 +2,17 @@
 
 Python + Tkinter + 本地 JSON 的校园二手交易**原型**，不涉及真实支付与云端部署。
 
-> 本仓库当前已完成 **核心后端（backend_zhang）**。
-> 图形界面（gui_gao）、收藏 / 留言 / 意向 / 日志（feature_du）、单元测试（tests_zhao）、报告与 PPT（docs_huang）
-> 由对应组员补充，本次不包含其代码。
+> 当前已提交 **核心后端（backend_zhang）和核心图形界面（gui_gao）**，已接通登录注册、商品浏览搜索、详情、发布编辑、个人商品管理与账号设置。
+> 收藏 / 留言 / 意向 / 日志代码已放在根目录 `feature_du/`，与前端的接口联调尚未完成。
+> 整组单元测试（tests_zhao）、报告与 PPT（docs_huang）仍由对应组员补充；前端自测不能替代整组最终验收。
+
+前端使用说明见 [gui_gao/README.md](gui_gao/README.md)，交接事项见 [gui_gao/HANDOFF.md](gui_gao/HANDOFF.md)，检查记录见 [gui_gao/TEST_REPORT.md](gui_gao/TEST_REPORT.md)。
 
 ---
 
 ## 1. 目录结构
+
+以下为小组约定结构：`tests_zhao/`、`docs_huang/` 尚待对应成员提交，`demo_data/` 由后端演示命令生成。
 
 ```
 campus-secondhand/
@@ -33,7 +37,20 @@ campus-secondhand/
 │       └── items_meta.example.json
 ├── feature_du/               # 收藏 / 留言 / 意向 / 日志（DU YI）
 ├── gui_gao/                  # Tkinter 界面（GAO JINGYAN）
-├── tests_zhao/               # 单元测试（ZHAO XIAOJUN 负责，本次未包含代码）
+│   ├── __init__.py           # main()，供根入口调用
+│   ├── __main__.py           # 独立演示 / 独立数据目录入口
+│   ├── app.py                # 窗口、导航、后台任务、错误反馈
+│   ├── gateway.py            # 调用后端公开服务接口
+│   ├── login_page.py
+│   ├── home_page.py
+│   ├── item_page.py
+│   ├── publish_page.py
+│   ├── account_page.py
+│   ├── theme.py / widgets.py / validation.py
+│   ├── demo.py / assets/     # 虚构演示数据及原创示意图
+│   ├── tests/               # 前端补充测试，不替代 tests_zhao
+│   └── README.md / HANDOFF.md / TEST_REPORT.md
+├── tests_zhao/               # 整组单元测试（ZHAO XIAOJUN，待提交）
 │   └── fixtures/
 ├── docs_huang/               # 报告与 PPT（HUANG BAIQI）
 ├── demo_data/                # 演示数据（python main.py --demo 生成）
@@ -42,25 +59,35 @@ campus-secondhand/
 │   └── data_schema.md        # 数据格式契约
 ├── .gitignore
 ├── README.md
-└── main.py                   # 入口：--check / --demo / --test / --gui
+└── main.py                   # 入口：--check / --demo / --gui
 ```
 
 ---
 
 ## 2. 运行
 
-要求：Python 3.10+（仅用标准库，无需 pip install）。
+要求：Python 3.10+。图形界面需要 Tkinter 和图形桌面；核心功能及 PNG/GIF 预览仅用标准库，无需 pip install。若本机 `python3` 不是此版本，请换用已安装的 Python 3.10+ 解释器。以下命令均在仓库根目录运行。
 
 ```bash
 # 后端自检（临时数据，19 项检查，不碰正式数据）
-python main.py
+python3 main.py
 
-# 完整业务演示（写 demo_data/，每次运行前自动清空）
-python main.py --demo
+# 后端业务演示（写 demo_data/，每次运行前自动清空）
+python3 main.py --demo
 
-# 启动图形界面（需 gui_gao 已实现 main()）
-python main.py --gui
+# 启动正式图形界面（现有 gui_gao.main() 已接通）
+python3 main.py --gui
+
+# 推荐先用独立前端演示（临时数据，正常关闭后清理）
+python3 -m gui_gao --demo
+
+# 将练习数据保存在自己选择的独立目录（按需运行）
+python3 -m gui_gao --data-dir ./my_practice_data
 ```
+
+正式模式没有预设账号，请先注册。独立前端演示账号为 `gao_demo`，密码为 `Campus123`；其他演示用户和商品也都是虚构数据。前端演示使用系统临时目录，与后端的 `main.py --demo` 分开；自选练习目录会保留数据，请勿提交其 JSON 文件。
+
+Mac 可双击 `gui_gao/启动演示.command`。可选 `.app` 启动器重复打开曾报错，推荐命令行或 `.command`；它们均需要本机 Python/Tkinter。JPEG 预览可由环境中已有的 Pillow 增强，但 Pillow 不是必需依赖。详情见前端 README。
 
 首次调用任何接口时，`backend_zhang/data/` 下的 `users.json`、`items.json`、`items_deleted.json`
 会自动创建为空数组 `[]`，`items_meta.json` 自动创建为 `{"next_item_id": 1}`。
@@ -120,6 +147,16 @@ if record["deleted"]:
 - **留言 (Messages)**：處理商品留言互動與紀錄。
 - **意向 (Intentions)**：管理買家購買意向的提交與狀態。
 - **日誌 (Logs)**：記錄系統核心操作足跡。
+
+当前上述代码位于根目录 `feature_du/`。目录已就位，但存储接口仍需统一：`messages.py` 导入的 `JsonStore` 在核心后端不存在，其他模块使用的 `.lock/.read()/.write()` 与后端公开方法不一致。收藏、留言、意向和日志尚未接入 GUI；请对应负责人协调接口后联调。核心前端不加载这些模块。
+
+### 图形界面（gui_gao，GAO JINGYAN 负责）
+
+- 已接通：登录注册、分类/关键词搜索、价格排序、分页、商品详情、发布编辑、个人商品下架/上架/删除、昵称与密码修改。
+- 正常业务经 `gateway.py` 调用后端公开服务，遵守 `success/message/data` 返回格式；不直接读写业务 JSON。权限、搜索及状态修改以服务层为准。
+- 服务读写在后台线程执行，处理期间防止重复提交；错误反馈、未保存提醒、删除确认及图片占位均由界面提供。
+- 仅使用既有“在售 / 已下架”状态；尚未接入的联系功能会明确提示，不能演示为已完成。
+
 ## 5. 数据安全要点
 
 | 项目 | 做法 |
@@ -133,15 +170,25 @@ if record["deleted"]:
 | 排序注入 | 排序字段白名单校验（`created_at` / `updated_at` / `price`） |
 | JSON 损坏 | 抛明确错误 + 返回 `success=false`，不崩溃、不自动覆盖原文件 |
 | 写入保护 | 同一文件按绝对路径共享 `threading.RLock`；`mkstemp` 唯一临时文件 + `fsync` + `os.replace` 原子替换 |
-| 数据隔离 | 正式数据只在 `backend_zhang/data/`；演示写 `demo_data/`，自检用 `tempfile.TemporaryDirectory()` |
+| 数据隔离 | 正式数据在 `backend_zhang/data/`；后端演示写 `demo_data/`；前端 `--demo` 和自检用临时目录，前端 `--data-dir` 可指定独立练习目录 |
 | 删除可追溯 | 彻底删除前写 `items_deleted.json` 快照，归档只追加、只读，无法据此恢复商品；归档写失败则不执行删除 |
 | ID 不复用 | 商品 ID 由 `items_meta.json` 计数器发号，下限含「现有最大 ID + 1」与「归档最大 ID + 1」，删除后不复用、计数器丢失也不撞号 |
 
 ---
 
-## 6. 测试（不在本次交付范围）
+## 6. 测试与验证范围
 
-单元测试由 **ZHAO XIAOJUN** 负责编写，代码放在 `tests_zhao/`，本次未包含任何测试文件。
+整组单元测试由 **ZHAO XIAOJUN** 负责，代码放在 `tests_zhao/`，仍待对应成员提交。Gao 的前端补充测试放在 `gui_gao/tests/`，不替代整组测试分工。
+
+```bash
+# 前端及后端连接检查（使用临时数据；Tk 测试需要图形桌面）
+python3 -m unittest discover -s gui_gao/tests -v
+
+# 原有后端自检（使用临时数据）
+python3 main.py
+```
+
+2026-11-03 前端提交前验证：macOS、Python 3.12.14、Tk 9.0.4 下，29 项前端测试（18 项服务/校验、11 项 Tk）全部通过且无跳过，19 项原有后端自检通过。具体记录及窗口资源清理回归检查见 [TEST_REPORT](gui_gao/TEST_REPORT.md)。没有图形桌面时 Tk 测试会跳过，不能计为通过；Windows/Linux 真实桌面尚未验证。前端设计、实现及测试使用 Codex 协助，具体贡献与 AI 使用范围见[前端说明](gui_gao/README.md#7-ai-使用说明)。
 
 后端已为测试提供全部必要条件：
 
@@ -166,7 +213,7 @@ with tempfile.TemporaryDirectory() as tmp:
 - 所有字段限制、权限规则、状态流转的返回值见 `contracts/backend_api.md`；
 - 时间字段可通过注入时间来源断言（服务层时间来自 `backend_zhang.json_store.now_text`）。
 
-示例数据模板可放在 `tests_zhao/fixtures/`（目录已建好，目前为空）。
+整组测试提交时，示例数据模板可放在 `tests_zhao/fixtures/`，不要提交真实用户或交易数据。
 
 ---
 
@@ -188,3 +235,17 @@ with tempfile.TemporaryDirectory() as tmp:
 `backend_zhang/data/users.json`、`items.json`、`items_deleted.json`、`items_meta.json`、
 `demo_data/*.json` 已在 `.gitignore` 中，
 请勿使用 `git add .` 一次性提交所有组员文件，按目录分别提交。
+
+成员上传自己的模块后，应同步更新根 README 和 [GitHub 仓库操作指南](GitHub%20仓库操作指南) 中对应的目录、入口、验证结果与待联调事项。共用文档只改与本人交付有关的段落；不覆盖其他成员的内容。
+
+例如前端更新，仅在确认差异后暂存：
+
+```bash
+git status --short
+git diff -- gui_gao README.md "GitHub 仓库操作指南"
+git add -- gui_gao README.md "GitHub 仓库操作指南"
+git diff --cached --stat
+git diff --cached
+```
+
+确认暂存区只包含本次负责的文件，再提交和推送；推送后检查 GitHub 上目标分支及文件。上传前先同步远端，如有冲突应核对并协调，不强制覆盖队友提交。

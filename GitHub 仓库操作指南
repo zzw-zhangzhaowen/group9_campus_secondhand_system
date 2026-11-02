@@ -1,5 +1,6 @@
-1.GitHub 仓库目录
-建议仓库使用以下结构：
+1. GitHub 仓库目录
+以下是约定结构，包含已提交模块及待提交的分工目录。
+截至 2026-11-03，核心后端 backend_zhang/ 和核心前端 gui_gao/ 已提交；互动代码位于根目录 feature_du/，尚待接口联调。tests_zhao/、docs_huang/、contracts/feature_api.md 和 .github/ 等仍按分工补充；demo_data/ 由后端演示生成。
 campus-secondhand/
 │
 ├── backend_zhang/
@@ -12,18 +13,27 @@ campus-secondhand/
 │   └── data/
 │
 ├── feature_du/
-│   ├── favorite_service.py
-│   ├── message_service.py
-│   ├── order_service.py
-│   ├── log_service.py
-│   └── data/
+│   ├── __init__.py
+│   ├── favorites.py
+│   ├── messages.py
+│   ├── intentions.py
+│   └── logs.py
 │
 ├── gui_gao/
+│   ├── __init__.py           # 对根 main.py 提供 main()
+│   ├── __main__.py           # 独立演示 / 独立数据目录
 │   ├── app.py
+│   ├── gateway.py            # 后端公开服务适配
 │   ├── login_page.py
 │   ├── home_page.py
 │   ├── item_page.py
-│   └── publish_page.py
+│   ├── publish_page.py
+│   ├── account_page.py
+│   ├── theme.py / widgets.py / validation.py
+│   ├── demo.py / assets/
+│   ├── tests/               # 前端补充测试
+│   ├── 启动演示.command
+│   └── README.md / HANDOFF.md / TEST_REPORT.md
 │
 ├── tests_zhao/
 │   ├── test_user.py
@@ -47,13 +57,57 @@ campus-secondhand/
 ├── README.md
 └── main.py
 
-2.成员负责目录
-成员负责目录负责内容
-ZHANG ZHAOWEN：backend_zhang/用户、商品、JSON 数据读写、数据校验
-DU YI：feature_du/收藏、留言、意向订单、操作日志
-GAO JINGYAN：gui_gao/Tkinter 图形界面
-ZHAO XIAOJUN：tests_zhao/单元测试、调试和异常测试
-HUANG BAIQI：docs_huang/项目报告、用户手册、PPT 和中英文文档
-
-3.公共接口文档放在：contracts/
+2. 成员负责目录
+
+ZHANG ZHAOWEN：backend_zhang/ —— 用户、商品、JSON 数据读写、数据校验
+DU YI：feature_du/ —— 收藏、留言、意向订单、操作日志
+GAO JINGYAN：gui_gao/ —— Tkinter 图形界面
+ZHAO XIAOJUN：tests_zhao/ —— 单元测试、调试和异常测试
+HUANG BAIQI：docs_huang/ —— 项目报告、用户手册、PPT 和中英文文档
+
+3. 公共接口文档放在：contracts/
+
+4. Gao 前端接入与启动
+
+使用带 Tkinter 的 Python 3.10+，在仓库根目录运行：
+
+  python3 main.py --gui
+
+根入口已调用 gui_gao.main()，无需把前端文件复制到 backend_zhang/，也无需修改队友的 main.py。正式模式先注册自己的账号。
+
+建议第一次先运行独立演示：
+
+  python3 -m gui_gao --demo
+
+演示账号 gao_demo，密码 Campus123。使用临时目录内的虚构用户和商品，正常关闭后清理，不修改正式数据。Mac 也可双击 gui_gao/启动演示.command；可选 .app 重复打开曾报错，优先使用命令行或 .command。
+
+已接通：登录注册、商品浏览/搜索/排序/分页、详情、发布编辑、个人商品上下架与删除、昵称和密码修改。正常业务通过 gateway.py 调用后端公开服务；不直接读写 JSON，权限和状态修改以服务层为准。
+
+收藏、留言、意向和日志代码虽已放在 feature_du/，仍需统一存储接口及公开返回格式后才能接到 GUI，当前不能视为已联调完成。详细事项见 gui_gao/HANDOFF.md。
+
+5. 检查与分工交接
+
+  python3 -m unittest discover -s gui_gao/tests -v
+  python3 main.py
+
+2026-11-03 前端提交前记录：macOS / Python 3.12.14 / Tk 9.0.4，29 项前端补充测试无跳过通过，19 项原有后端自检通过。Tk 测试需要图形桌面，跳过不能计为通过；Windows/Linux 桌面尚未实测。详情见 gui_gao/TEST_REPORT.md。
+
+Gao 的测试保留在 gui_gao/tests/，整组 tests_zhao/ 仍由测试负责人维护；报告、PPT 和用户手册由 docs_huang/ 负责人维护。交付后仍需小组联调与最终演示核对。前端 AI 使用说明见 gui_gao/README.md，报告应据实际贡献如实披露。
+
+6. 按目录提交，上传后同步说明
+
+- 上传前先检查工作区并同步远端。遇到冲突先核对，不强制覆盖队友的提交。
+- 不使用 git add .。只暂存本人负责的目录；确认 git diff --cached 中没有其他成员的修改。
+- 正式业务数据、临时演示数据、缓存、真实账号及密钥不提交。新增自己的练习数据目录时也要排除其 JSON 文件。
+- 本人模块上传后，同步根 README 和本指南中相应的目录、运行入口、验证结果及待联调事项；保留其他成员的内容。
+
+例如前端模块与对应文档更新：
+
+  git status --short
+  git diff -- gui_gao README.md "GitHub 仓库操作指南"
+  git add -- gui_gao README.md "GitHub 仓库操作指南"
+  git diff --cached --stat
+  git diff --cached
+
+确认范围正确后再提交、推送，并在 GitHub 核对目标分支和文件；仅在本地保存不等于队友已能看到。后续文档更新如果没有代码修改，只需暂存实际变更的文档。
 
