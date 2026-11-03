@@ -4,7 +4,7 @@ from tkinter import ttk, messagebox
 from .gateway import UserError
 from .interaction_page import MessagePanel
 from . import theme as t
-from .page_design import note_card
+from .page_design import note_card, FoldNote
 from .widgets import ScrollPage, ItemImage, empty_state
 
 
@@ -52,6 +52,7 @@ class ItemPage(ScrollPage):
         picture.bind('<Button-1>', lambda _: self.zoom_image())
         t.button(left, '放大查看图片  ↗', self.zoom_image, 'nav').pack(anchor='e', pady=8)
         note_card(left, '每件好物，都有继续的可能', '01  看清照片、描述与使用情况。\n02  在留言区确认配件和交收安排。\n03  线下见面检查，双方确认后交接。').pack(fill='x', pady=(12,20))
+        FoldNote(left, '看图时，可以留意什么？', '留意边角、屏幕、接口等易磨损位置。当前只有一张商品图，细节不足可以在下方留言询问。').pack(fill='x', pady=(0, 16))
         if picture.reason:
             t.label(left, "卖家未上传可预览的图片，可参考右侧商品描述。", size=10, color=t.MUTED,
                     wraplength=420).pack(anchor="w", pady=10)
@@ -91,9 +92,39 @@ class ItemPage(ScrollPage):
         window.transient(self.app.root)
         window.geometry('700x600')
         window.configure(bg=t.WHITE)
-        ItemImage(window, self.item.get('image_path',''), width=660, height=470).pack(fill='both', expand=True, padx=20, pady=20)
-        t.label(window, self.item['name'], bold=True).pack(pady=8)
-        t.button(window, '关闭预览', window.destroy).pack(pady=(0,20))
+        viewport = tk.Canvas(window, bg=t.PALE, highlightthickness=0)
+        viewport.pack(fill='both', expand=True, padx=20, pady=10)
+        horizontal = ttk.Scrollbar(window, orient='horizontal', command=viewport.xview)
+        horizontal.pack(fill='x', padx=20)
+        vertical = ttk.Scrollbar(viewport, orient='vertical', command=viewport.yview)
+        vertical.pack(side='right', fill='y')
+        viewport.configure(xscrollcommand=horizontal.set, yscrollcommand=vertical.set)
+        source = ItemImage(window, self.item.get('image_path',''), width=620, height=420)
+        controls = ttk.Frame(window)
+        controls.pack(pady=12)
+        scale = [1]
+        counter = t.label(controls, '100%', size=11)
+        def zoom(delta=0):
+            scale[0] = max(1, min(3, scale[0]+delta)) if delta else 1
+            viewport.delete('picture')
+            if source.photo:
+                viewport.photo = source.photo.zoom(scale[0])
+                viewport.create_image(0, 0, image=viewport.photo, anchor='nw', tags='picture')
+                viewport.configure(scrollregion=viewport.bbox('picture'))
+            else:
+                viewport.create_text(310, 180, text=source.reason, fill=t.MUTED, tags='picture')
+            counter.configure(text=f'{scale[0]*100}%')
+            smaller.configure(state='disabled' if scale[0] == 1 else 'normal')
+            larger.configure(state='disabled' if scale[0] == 3 else 'normal')
+        smaller = t.button(controls, '− 缩小', lambda: zoom(-1))
+        smaller.pack(side='left', padx=8)
+        counter.pack(side='left', padx=8)
+        larger = t.button(controls, '＋ 放大', lambda: zoom(1))
+        larger.pack(side='left', padx=8)
+        t.button(controls, '复位', zoom, 'nav').pack(side='left', padx=8)
+        zoom()
+        t.label(window, '放大后使用滚动条查看细节 · '+self.item['name'], size=10).pack(pady=8)
+        t.button(window, '关闭预览', window.destroy).pack(pady=(0, 15))
         window.bind('<Escape>', lambda _: window.destroy())
         window.focus_set()
 

@@ -1,7 +1,8 @@
 """Favorites, public item discussions, purchase intentions and personal activity."""
+import tkinter as tk
 from tkinter import ttk
 from . import theme as t
-from .page_design import PageBanner, note_card
+from .page_design import PageBanner, note_card, LocalChecklist
 from .widgets import ScrollPage, Field, ItemImage, page_title, empty_state
 
 TABS = {'favorites': '我的收藏', 'messages': '商品留言', 'intentions': '购买意向', 'logs': '操作记录'}
@@ -30,9 +31,16 @@ class MessagePanel(ttk.Frame):
             chips.pack(fill='x', pady=(0, 12))
             for text in ['配件是否齐全？', '有什么使用痕迹？', '方便在哪里交收？']:
                 t.button(chips, text+' +', lambda v=text: self.add_prompt(v), 'nav').pack(side='left', padx=(0, 6))
+            self.counter = t.label(self, '0 / 500', color=t.MUTED, size=10)
+            self.counter.pack(anchor='e', pady=(0, 10))
+            self.composer.observe(self.update_count)
             t.button(self, '发布留言  →', self.send, 'primary').pack(anchor='e')
         else:
             t.label(self, '商品已不可交易，历史留言仍可查看。', color=t.MUTED).pack(anchor='w')
+
+    def update_count(self):
+        length = len(self.composer.get())
+        self.counter.configure(text=f'{length} / 500', fg=t.RED if length > 500 else t.MUTED)
 
     def add_prompt(self, text):
         if not self.composer or self.app.busy:
@@ -43,6 +51,7 @@ class MessagePanel(ttk.Frame):
             self.composer.show_error('留言最多 500 字，请先精简内容。')
             return
         self.composer.set(updated)
+        self.update_count()
         self.composer.input.focus_set()
 
     def is_dirty(self):
@@ -90,6 +99,8 @@ class InteractionPage(ScrollPage):
         self.app, self.kind, self.item_id = app, kind, item_id
         self.direction = 'sent'
         self.records = []
+        self.only_available = False
+        self.log_query = tk.StringVar(master=self, value='')
         self.panel = None
         introductions = {'favorites': ('把心动留住，下次接着逛。', '收藏清单里的好物，都值得再看一眼。'),
             'messages': ('聊清楚细节，让好物顺利交接。', '按商品整理的公开讨论，点开就能继续对话。'),
@@ -97,13 +108,30 @@ class InteractionPage(ScrollPage):
             'logs': ('你在校园市集留下的小小足迹。', '仅展示你自己的操作，不记录密码和留言正文。')}
         title, subtitle = introductions[kind]
         PageBanner(self.body, app, 'CONNECTIONS / '+TABS[kind], title, subtitle,
-                   'notebook' if kind in ('messages', 'logs') else 'bag').pack(fill='x', pady=(0,22))
+                   kind).pack(fill='x', pady=(0,22))
         tabs = ttk.Frame(self.body)
         tabs.pack(fill='x', pady=(0, 22))
         for value, title in TABS.items():
             t.button(tabs, title, lambda k=value: app.show('interactions', kind=k),
                      'selected' if kind == value else 'nav').pack(side='left', padx=(0, 12))
         t.button(tabs, '刷新', self.start, 'nav').pack(side='right')
+        if kind == 'favorites':
+            self.available = tk.BooleanVar(master=self, value=False)
+            ttk.Checkbutton(self.body, text='只看在售的收藏', variable=self.available,
+                            command=self.filter_favorites).pack(anchor='w', pady=(0, 16))
+        if kind == 'logs':
+            search = ttk.Frame(self.body)
+            search.pack(fill='x', pady=(0, 18))
+            t.label(search, '按操作内容查找', size=11, color=t.MUTED).pack(side='left', padx=(0, 15))
+            entry = ttk.Entry(search, textvariable=self.log_query)
+            entry.pack(side='left', fill='x', expand=True)
+            entry.bind('<KeyRelease>', lambda _: self.render())
+        if kind == 'messages':
+            note_card(self.body, '把问题问具体，把好物讲清楚。', '使用痕迹 · 随附配件 · 交收地点。这里是按商品整理的公开讨论。').pack(fill='x', pady=(0, 18))
+        if kind == 'intentions':
+            self.meet_check = LocalChecklist(self.body, '见面前，准备好三件事。', [
+                '确认物品情况和配件', '约好双方方便的公共交收地点', '见面检查，确认后再自行交接'])
+            self.meet_check.pack(fill='x', pady=(0, 20))
         self.area = ttk.Frame(self.body)
         self.area.pack(fill='both', expand=True)
 
@@ -160,6 +188,14 @@ class InteractionPage(ScrollPage):
             records = [r for r in self.records if r[key] == uid]
         else:
             records = self.records
+        if self.kind == 'favorites' and self.only_available:
+            records = [r for r in records if r['status'] == '在售']
+        if self.kind == 'logs':
+            query = self.log_query.get().strip().casefold()
+            records = [r for r in records if query in (r['action_type']+' '+r.get('detail', '')).casefold()]
+        if not records and ((self.kind == 'favorites' and self.only_available) or (self.kind == 'logs' and self.log_query.get().strip())):
+            t.label(self.area, '当前筛选没有匹配记录，请更换筛选条件。', color=t.MUTED).pack(pady=25)
+            return
         if not records:
             messages = {'favorites': ('把喜欢的好物留在这里', '浏览商品时点「收藏」，下次就能快速找到。'),
                         'messages': ('还没有与你相关的留言', '你发布的商品留言，以及你参与过的商品讨论，会展示在这里。'),
@@ -205,6 +241,10 @@ class InteractionPage(ScrollPage):
                 t.label(info, who+'   /   '+status, color=t.MUTED).pack(anchor='w')
                 t.label(info, record['created_at'], size=10, color=t.MUTED).pack(anchor='w', pady=(5, 0))
                 t.button(actions, '查看商品留言', lambda i=item['id']: self.app.show('interactions', kind='messages', item_id=i)).pack()
+
+    def filter_favorites(self):
+        self.only_available = self.available.get()
+        self.render()
 
     def change_direction(self, direction):
         if not self.app.busy:

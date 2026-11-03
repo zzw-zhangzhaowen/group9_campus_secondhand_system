@@ -23,6 +23,8 @@ class LoginPage(ScrollPage):
                 bg=t.BLUE, justify="left", size=12).pack(anchor="w")
         self.artwork = AuthArtwork(left, app)
         self.artwork.pack(anchor="center", pady=(20, 12))
+        self.light_button = t.button(left, '点亮书桌 ✦', self.toggle_light, 'accent')
+        self.light_button.pack(anchor='center')
         t.label(left, "发现好物   /   轻松发布   /   校园相遇", size=10,
                 color=t.LIME, bg=t.BLUE).pack(anchor="w", pady=(12, 0))
         t.label(left, "LESS WASTE.  MORE STORIES.", size=9, color='#DBE6FF', bg=t.BLUE).pack(anchor="w", pady=(10, 0))
@@ -63,6 +65,10 @@ class LoginPage(ScrollPage):
             t.label(demo, "先体验一下校园生活", bold=True, size=11, bg=t.PALE, color=t.BLUE).pack(anchor="w")
             t.label(demo, "虚构演示账号 · 关闭后清空演示数据", size=10, bg=t.PALE, color=t.MUTED).pack(anchor="w", pady=5)
             t.button(demo, "填入演示账号  ↗", self.fill_demo, "nav").pack(anchor="w")
+
+    def toggle_light(self):
+        lit = self.artwork.toggle_light()
+        self.light_button.configure(text='关掉灯光 ☾' if lit else '点亮书桌 ✦')
 
     def toggle_password(self):
         self.password_visible = not self.password_visible

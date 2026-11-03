@@ -34,6 +34,8 @@ campus-secondhand/
 │   ├── page_design.py        # 次级页面与登录插画
 │   ├── theme.py / widgets.py / validation.py
 │   ├── demo.py / assets/
+│   ├── assets/scenes/       # 原创分层 PNG，运行时直接读取
+│   ├── tools/              # 可选插画生成源，不是运行依赖
 │   ├── tests/               # 前端补充测试
 │   ├── 启动演示.command
 │   └── README.md / HANDOFF.md / TEST_REPORT.md
@@ -90,12 +92,14 @@ HUANG BAIQI：docs_huang/ —— 项目报告、用户手册、PPT 和中英文�
 
 本次次级页面优化包含：登录/注册插画与密码显示切换、演示账号一键填入、账号名片与真实数量入口、发布实时预览及内容提示、图片放大、四类互动页面的插画与留言/记录布局。短暂悬停动画可关闭。功能继续调用原有服务；网页设计比较稿仍是独立模拟预览，不作为正式后端入口。
 
+本轮进一步补充：不同板块的原创插画、台灯开关、首页场景入口、拍照/交接自检、收藏筛选、记录搜索、留言字数和图片缩放/复位。路线标记依次跳到 1、2、3；时钟保持钟面固定、指针逐格跳动，均有暂停和减少动效控制。只改变前端展示与局部交互，不更新交易状态或队友接口。所需 PNG 一并上传；gui_gao/tools/build_scene_art.py 是可选生成源，需要 Pillow，正常启动仍无需安装新依赖。
+
 5. 检查与分工交接
 
   python3 -m unittest discover -s gui_gao/tests -v
   python3 main.py
 
-2026-11-04 次级页面与登录优化记录：macOS / Python 3.12.14 / Tk 9.0.4，45 项前端补充测试无跳过通过。19 项后端自检为此前 B 版交付的通过记录，本次未重复执行。Tk 测试需要图形桌面，跳过不能计为通过；Windows/Linux 桌面尚未实测。详情见 gui_gao/TEST_REPORT.md。
+2026-11-04 插画与动效更新记录：macOS / Python 3.12.14 / Tk 9.0.4，49 项前端补充测试无跳过通过，包含动画暂停、减少动效和任务清理。网页路线/时钟已实看；这两处原生桌面动画的人工视觉核对尚待完成。19 项后端自检为此前 B 版交付的通过记录，本次未重复执行。Tk 测试需要图形桌面，跳过不能计为通过；Windows/Linux 桌面尚未实测。详情见 gui_gao/TEST_REPORT.md。
 
 Gao 的测试保留在 gui_gao/tests/，整组 tests_zhao/ 仍由测试负责人维护；报告、PPT 和用户手册由 docs_huang/ 负责人维护。交付后仍需小组联调与最终演示核对。前端 AI 使用说明见 gui_gao/README.md，报告应据实际贡献如实披露。
 

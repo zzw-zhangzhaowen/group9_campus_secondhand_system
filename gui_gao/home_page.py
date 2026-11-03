@@ -1,4 +1,5 @@
 """Searchable marketplace and owner-only listing management."""
+from pathlib import Path
 from tkinter import ttk, messagebox
 from . import theme as t
 from .page_design import PageBanner, StatStrip
@@ -16,6 +17,17 @@ class HomePage(ScrollPage):
         self.columns = 5
         if not app.keyword and not app.category:
             MarketHero(self.body, app).pack(fill="x", pady=(0, 24))
+        if not app.keyword and not app.category:
+            collections = ttk.Frame(self.body)
+            collections.pack(fill='x', pady=(0, 25))
+            for i, (category, image, title) in enumerate([
+                    ('书籍', 'book', '新学期书桌'), ('电子产品', 'keyboard', '学习好搭档'),
+                    ('生活用品', 'bag', '宿舍小日子')]):
+                tile = ttk.Frame(collections, padding=12, relief='solid', borderwidth=1)
+                tile.grid(row=0, column=i, sticky='nsew', padx=(0, 12))
+                collections.columnconfigure(i, weight=1, uniform='collection')
+                ItemImage(tile, str(Path(__file__).parent/'assets'/f'{image}.png'), width=70, height=65).pack(side='right')
+                t.button(tile, title+' ↗', lambda c=category: self.filter(c), 'nav').pack(side='left')
         page_title(self.body, "发现校园好物", "找到需要的，也让喜欢的继续。")
         filters = ttk.Frame(self.body)
         filters.pack(fill="x", pady=(8,16))

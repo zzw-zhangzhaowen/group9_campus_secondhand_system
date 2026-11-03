@@ -1,7 +1,7 @@
 """Nickname and password forms, isolated from other people's account data."""
 from tkinter import ttk
 from . import theme as t
-from .page_design import PageBanner, StatStrip, note_card
+from .page_design import PageBanner, StatStrip, note_card, FoldNote
 from .validation import nickname_error, password_error
 from .widgets import ScrollPage, Field, field_errors, page_title
 
@@ -37,6 +37,7 @@ class AccountPage(ScrollPage):
         note_card(left, '一张容易被记住的校园名片', '昵称会出现在商品和公开留言中。修改昵称不会改变登录用户名。').pack(fill='x', pady=(16, 12))
         self.motion_button = t.button(left, '恢复轻动效' if app.reduce_motion else '减少动态效果', self.toggle_motion, 'nav')
         self.motion_button.pack(anchor='w')
+        FoldNote(left, '校园名片怎么用？', '取一个容易辨认的昵称，让同学在商品和公开留言里认出你。昵称可更新，登录用户名保持不变。').pack(fill='x', pady=15)
         right = ttk.Frame(area, padding=20, relief="solid", borderwidth=1)
         right.grid(row=0, column=1, sticky="nsew")
         t.label(right, "修改密码", size=18, bold=True).pack(anchor="w", pady=(0,20))

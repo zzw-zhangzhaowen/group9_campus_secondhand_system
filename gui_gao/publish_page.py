@@ -3,7 +3,7 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, filedialog
 from . import theme as t
-from .page_design import PageBanner, note_card
+from .page_design import PageBanner, note_card, LocalChecklist
 from .gateway import UserError
 from .validation import CATEGORIES, item_errors
 from .widgets import ScrollPage, Field, ItemImage, field_errors, page_title, empty_state, image_path
@@ -94,6 +94,9 @@ class PublishPage(ScrollPage):
         for field in self.fields.values():
             field.observe(self.update_preview)
         self.update_preview()
+        self.photo_check = LocalChecklist(left, '让照片替好物说话。', [
+            '拍到物品整体，背景尽量简单', '补充使用痕迹和配件说明', '确认照片与实际商品一致'])
+        self.photo_check.pack(fill='x', pady=16)
         self.original = self.values()
 
     def update_preview(self):
