@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 from gui_gao.app import CampusApp
 from gui_gao.gateway import Gateway
-from gui_gao.widgets import ItemImage, image_path
+from gui_gao.widgets import ItemImage, MarketHero, image_path
 
 
 class TkFlowTests(unittest.TestCase):
@@ -176,6 +176,40 @@ class TkFlowTests(unittest.TestCase):
         self.assertTrue(finalized_on)
         self.assertEqual(set(finalized_on), {threading.get_ident()})
 
+    def test_interactions_submit_and_navigation(self):
+        self.login()
+        self.gateway.register("other_user", "Campus123", "其他同学")
+        self.gateway.login("other_user", "Campus123")
+        item = self.gateway.save_item(dict(name="键盘", category="电子产品", price="88", description="蓝牙正常", image_path=""))
+        self.gateway.login("student_a", "Campus123")
+        self.app.show("detail", item_id=item['id'])
+        self.wait()
+        page = self.app.page
+        page.favorite()
+        self.wait()
+        self.assertTrue(page.favorited)
+        page.messages_panel.composer.set("请问还在吗？")
+        with patch("gui_gao.app.messagebox.askyesno", return_value=False):
+            self.app.show("home")
+        self.assertEqual(self.app.route, "detail")
+        page.messages_panel.send()
+        self.wait()
+        self.assertFalse(page.is_dirty())
+        with patch("gui_gao.item_page.messagebox.askyesno", return_value=True):
+            page.intention()
+        self.wait()
+        self.assertTrue(page.intended)
+        self.root.geometry("1000x700")
+        self.root.deiconify()
+        for kind in ["favorites", "messages", "intentions", "logs"]:
+            self.app.show("interactions", kind=kind)
+            self.wait()
+            self.assertTrue(self.app.page.records, kind)
+            self.assertLessEqual(self.app.page.body.winfo_reqwidth(), self.app.page.canvas.winfo_width()+2, kind)
+        self.app.show("interactions", kind="messages", item_id=item['id'])
+        self.wait()
+        self.assertIsNotNone(self.app.page.panel)
+
     def test_missing_and_corrupt_image_fallback(self):
         for value in ["", str(Path(self.temp.name)/"missing.png")]:
             image = ItemImage(self.root, value)
@@ -210,6 +244,12 @@ class TkFlowTests(unittest.TestCase):
             with self.subTest(route=route):
                 self.assertLessEqual(self.app.page.body.winfo_reqwidth(),
                                      self.app.page.canvas.winfo_width()+2)
+                if route == 'home':
+                    hero = next(w for w in self.app.page.body.winfo_children() if isinstance(w, MarketHero))
+                    copy = hero.winfo_children()[0]
+                    action = copy.winfo_children()[-1]
+                    self.assertGreaterEqual(action.winfo_height(), action.winfo_reqheight())
+                    self.assertLessEqual(action.winfo_y()+action.winfo_height(), copy.winfo_height())
 
 
 if __name__ == "__main__":

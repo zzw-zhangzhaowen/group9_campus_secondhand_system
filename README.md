@@ -2,8 +2,8 @@
 
 Python + Tkinter + 本地 JSON 的校园二手交易**原型**，不涉及真实支付与云端部署。
 
-> 当前已提交 **核心后端（backend_zhang）和核心图形界面（gui_gao）**，已接通登录注册、商品浏览搜索、详情、发布编辑、个人商品管理与账号设置。
-> 收藏 / 留言 / 意向 / 日志代码已放在根目录 `feature_du/`，与前端的接口联调尚未完成。
+> 当前实现 **核心后端（backend_zhang）和 B「活力市集」图形界面（gui_gao）**，已接通登录注册、商品浏览搜索、详情、发布编辑、个人商品管理与账号设置。
+> 收藏 / 留言 / 意向 / 日志已通过前端兼容层接入根目录 `feature_du/` 的真实服务；兼容约定待负责人确认。2026-11-04 的 B 版交付包含四类附加页面、集成测试及交接说明。
 > 整组单元测试（tests_zhao）、报告与 PPT（docs_huang）仍由对应组员补充；前端自测不能替代整组最终验收。
 
 前端使用说明见 [gui_gao/README.md](gui_gao/README.md)，交接事项见 [gui_gao/HANDOFF.md](gui_gao/HANDOFF.md)，检查记录见 [gui_gao/TEST_REPORT.md](gui_gao/TEST_REPORT.md)。
@@ -41,6 +41,8 @@ campus-secondhand/
 │   ├── __main__.py           # 独立演示 / 独立数据目录入口
 │   ├── app.py                # 窗口、导航、后台任务、错误反馈
 │   ├── gateway.py            # 调用后端公开服务接口
+│   ├── feature_gateway.py    # 附加服务的前端局部兼容
+│   ├── interaction_page.py   # 收藏 / 留言 / 意向 / 个人日志
 │   ├── login_page.py
 │   ├── home_page.py
 │   ├── item_page.py
@@ -148,14 +150,14 @@ if record["deleted"]:
 - **意向 (Intentions)**：管理買家購買意向的提交與狀態。
 - **日誌 (Logs)**：記錄系統核心操作足跡。
 
-当前上述代码位于根目录 `feature_du/`。目录已就位，但存储接口仍需统一：`messages.py` 导入的 `JsonStore` 在核心后端不存在，其他模块使用的 `.lock/.read()/.write()` 与后端公开方法不一致。收藏、留言、意向和日志尚未接入 GUI；请对应负责人协调接口后联调。核心前端不加载这些模块。
+当前上述代码位于根目录 `feature_du/`。前端 `feature_gateway.py` 在私有模块加载时，将原代码使用的 `JsonStore`、`.lock/.read()/.write()` 适配到核心 JSON 存储，未修改队友源文件或全局模块。四个独立页面与详情页操作已接通并保存数据；接口限制及后续统一方式见 [HANDOFF](gui_gao/HANDOFF.md)。
 
 ### 图形界面（gui_gao，GAO JINGYAN 负责）
 
-- 已接通：登录注册、分类/关键词搜索、价格排序、分页、商品详情、发布编辑、个人商品下架/上架/删除、昵称与密码修改。
+- 已接通：登录注册、分类/关键词搜索、价格排序、分页、商品详情、发布编辑、个人商品下架/上架/删除、昵称与密码修改，以及收藏、公开商品留言、发出/收到的购买意向、个人操作记录。
 - 正常业务经 `gateway.py` 调用后端公开服务，遵守 `success/message/data` 返回格式；不直接读写业务 JSON。权限、搜索及状态修改以服务层为准。
 - 服务读写在后台线程执行，处理期间防止重复提交；错误反馈、未保存提醒、删除确认及图片占位均由界面提供。
-- 仅使用既有“在售 / 已下架”状态；尚未接入的联系功能会明确提示，不能演示为已完成。
+- 商品只使用既有“在售 / 已下架”状态；删除历史以只读占位展示。意向服务目前只有创建/查询能力，没有接受、取消、付款或标记成交功能。
 
 ## 5. 数据安全要点
 
@@ -188,7 +190,7 @@ python3 -m unittest discover -s gui_gao/tests -v
 python3 main.py
 ```
 
-2026-11-03 前端提交前验证：macOS、Python 3.12.14、Tk 9.0.4 下，29 项前端测试（18 项服务/校验、11 项 Tk）全部通过且无跳过，19 项原有后端自检通过。具体记录及窗口资源清理回归检查见 [TEST_REPORT](gui_gao/TEST_REPORT.md)。没有图形桌面时 Tk 测试会跳过，不能计为通过；Windows/Linux 真实桌面尚未验证。前端设计、实现及测试使用 Codex 协助，具体贡献与 AI 使用范围见[前端说明](gui_gao/README.md#7-ai-使用说明)。
+2026-11-04 B 版验证：macOS、Python 3.12.14、Tk 9.0.4 下，42 项前端补充测试（18 项核心服务/校验、12 项附加集成、12 项 Tk）全部通过且无跳过，19 项原有后端自检通过。记录见 [TEST_REPORT](gui_gao/TEST_REPORT.md)，逐项要求核对见 [REQUIREMENTS_CHECK](gui_gao/REQUIREMENTS_CHECK.md)。没有图形桌面时 Tk 测试会跳过，不能计为通过；Windows/Linux 真实桌面尚未验证。前端设计、实现及测试使用 Codex 协助，具体贡献与 AI 使用范围见[前端说明](gui_gao/README.md#7-ai-使用说明)。
 
 后端已为测试提供全部必要条件：
 

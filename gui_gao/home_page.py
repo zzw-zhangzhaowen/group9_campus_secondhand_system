@@ -1,7 +1,7 @@
 """Searchable marketplace and owner-only listing management."""
 from tkinter import ttk, messagebox
 from . import theme as t
-from .widgets import ScrollPage, ItemImage, page_title, empty_state
+from .widgets import ScrollPage, ItemImage, page_title, empty_state, MarketHero
 from .validation import CATEGORIES, SORTS
 
 
@@ -12,8 +12,10 @@ class HomePage(ScrollPage):
         super().__init__(parent)
         self.app = app
         self.items, self.names, self.page_number = [], {}, 0
-        self.columns = 4
-        page_title(self.body, "好物，正在校园流转", "发现同学的闲置，让喜欢的东西继续发光。")
+        self.columns = 5
+        if not app.keyword and not app.category:
+            MarketHero(self.body, app).pack(fill="x", pady=(0, 24))
+        page_title(self.body, "发现校园好物", "找到需要的，也让喜欢的继续。")
         filters = ttk.Frame(self.body)
         filters.pack(fill="x", pady=(8,16))
         for category in ("",) + CATEGORIES:
@@ -36,7 +38,7 @@ class HomePage(ScrollPage):
         self.results.bind("<Configure>", self.resized)
 
     def resized(self, event):
-        columns = 4 if event.width >= 1050 else 3
+        columns = 5 if event.width >= 1180 else 4 if event.width >= 920 else 3
         if columns != self.columns and self.items:
             self.columns = columns
             if self.resize_job:
@@ -80,7 +82,7 @@ class HomePage(ScrollPage):
         self.resize_job = None
         width = self.results.winfo_width()
         if width > 1:
-            self.columns = 4 if width >= 1050 else 3
+            self.columns = 5 if width >= 1180 else 4 if width >= 920 else 3
         self.clear()
         count = len(self.items)
         label = f"共 {count} 件在售商品"
@@ -91,21 +93,21 @@ class HomePage(ScrollPage):
             empty_state(self.results, "还没有找到合适的好物", "换个关键词或分类试试，也可以发布你的第一件闲置。",
                         self.reset_filters, "查看全部商品")
             return
-        for column in range(4):
+        for column in range(5):
             self.results.columnconfigure(column, weight=1 if column < self.columns else 0, uniform="cards" if column < self.columns else "")
         start = self.page_number * self.PAGE_SIZE
         for index, item in enumerate(self.items[start:start+self.PAGE_SIZE]):
-            card = ttk.Frame(self.results, padding=(0,0,0,18), relief="solid", borderwidth=1)
+            card = ttk.Frame(self.results, padding=(0,0,0,18))
             card.grid(row=index//self.columns, column=index%self.columns, sticky="nsew", padx=8, pady=10)
-            picture = ItemImage(card, item.get("image_path", ""), item["category"], width=230, height=155)
+            picture = ItemImage(card, item.get("image_path", ""), item["category"], width=190, height=170)
             picture.pack(fill="x")
             picture.bind("<Button-1>", lambda e, i=item["id"]: self.app.show("detail", item_id=i))
             picture.configure(cursor="hand2")
-            content = ttk.Frame(card, padding=(14,12,14,0))
+            content = ttk.Frame(card, padding=(1,12,1,0))
             content.pack(fill="x")
             t.label(content, item["category"], size=10, color=t.MUTED).pack(anchor="w")
-            t.label(content, item["name"], size=14, bold=True, wraplength=225, justify="left").pack(anchor="w", pady=(5,8))
-            t.label(content, f"¥ {item['price']:.2f}", size=21, bold=True, color=t.BLUE).pack(anchor="w")
+            t.label(content, item["name"], size=13, bold=True, wraplength=200, justify="left").pack(anchor="w", pady=(5,8))
+            t.label(content, f"¥ {item['price']:.2f}", size=22, bold=True, color=t.INK).pack(anchor="w")
             seller = self.names.get(item["seller_id"], "校园同学")
             t.label(content, seller, size=10, color=t.MUTED).pack(anchor="w", pady=(8,8))
             t.button(content, "查看详情", lambda i=item["id"]: self.app.show("detail", item_id=i)).pack(fill="x")

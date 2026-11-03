@@ -22,7 +22,7 @@ class CampusApp:
         self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="campus-service")
         self.status = tk.StringVar()
         t.setup(root)
-        root.title("校园二手 · Group 9" + (" · 独立演示" if demo else ""))
+        root.title("校园二手 · 活力市集 B · Group 9" + (" · 独立演示" if demo else ""))
         root.geometry("1180x820")
         root.minsize(1000, 700)
         root.protocol("WM_DELETE_WINDOW", self.close)
@@ -43,7 +43,7 @@ class CampusApp:
         root.bind("<Button-4>", self.wheel, add="+")
         root.bind("<Button-5>", self.wheel, add="+")
         modifier = "Command" if root.tk.call("tk", "windowingsystem") == "aqua" else "Control"
-        for key, route in [("1", "home"), ("2", "mine"), ("3", "account"), ("n", "publish")]:
+        for key, route in [("1", "home"), ("2", "mine"), ("3", "account"), ("4", "interactions"), ("n", "publish")]:
             root.bind(f"<{modifier}-Key-{key}>", lambda e, r=route: self.shortcut(r))
         self.show("home" if self.gateway.user else "login", force=True)
 
@@ -128,6 +128,9 @@ class CampusApp:
             else:
                 self.notify("已更新")
                 success(result)
+                if self.gateway.warning:
+                    self.notify(self.gateway.warning, error=True)
+                    self.gateway.warning = ""
         self.root.after(35, poll)
         return True
 
@@ -153,9 +156,10 @@ class CampusApp:
         from .item_page import ItemPage
         from .publish_page import PublishPage
         from .account_page import AccountPage
+        from .interaction_page import InteractionPage
         classes = {"login": LoginPage, "register": LoginPage, "home": HomePage,
                    "mine": MyItemsPage, "detail": ItemPage, "publish": PublishPage,
-                   "account": AccountPage}
+                   "account": AccountPage, "interactions": InteractionPage}
         self.page = classes[route](self.content, self, **kwargs)
         self.page.pack(fill="both", expand=True)
         self.root.after_idle(self.page.start)
@@ -169,7 +173,7 @@ class CampusApp:
         if not self.gateway.user or self.route in ("login", "register"):
             t.label(top, "让闲置在校园继续发光", color=t.MUTED).pack(side="right")
             return
-        t.button(top, "+ 发布闲置", lambda: self.show("publish"), "primary").pack(side="right", padx=(18,0))
+        t.button(top, "+ 发布闲置", lambda: self.show("publish"), "accent").pack(side="right", padx=(18,0))
         t.label(top, self.gateway.user["nickname"], bold=True, color=t.BLUE).pack(side="right", padx=16)
         searchbox = ttk.Frame(top)
         searchbox.pack(side="left", fill="x", expand=True, padx=30)
@@ -180,7 +184,7 @@ class CampusApp:
         t.button(searchbox, "搜索", self.search_now, "primary").pack(side="left", padx=(6,0))
         nav = ttk.Frame(self.header)
         nav.pack(fill="x", pady=(0,10))
-        for route, name in [("home", "逛校园"), ("mine", "我的商品"), ("account", "账号设置")]:
+        for route, name in [("home", "逛校园"), ("interactions", "互动中心"), ("mine", "我的商品"), ("account", "账号设置")]:
             selected = self.route == route or (route == "home" and self.route == "detail")
             t.button(nav, name, lambda r=route: self.show(r), "selected" if selected else "nav").pack(side="left", padx=(0,8))
         t.button(nav, "退出登录", self.logout, "nav").pack(side="right")

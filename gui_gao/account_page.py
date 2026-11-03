@@ -10,6 +10,7 @@ class AccountPage(ScrollPage):
         super().__init__(parent)
         self.app = app
         page_title(self.body, "账号设置", "让同学认出你，也照顾好账号安全。")
+        t.button(self.body, "查看我的操作记录  →", lambda: app.show("interactions", kind="logs"), "nav").pack(anchor="e")
         area = ttk.Frame(self.body)
         area.pack(fill="x", pady=15)
         area.columnconfigure(0, weight=1)
