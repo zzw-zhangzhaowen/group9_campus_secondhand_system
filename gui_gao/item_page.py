@@ -1,8 +1,10 @@
 """Item detail with real data and an explicit owner action boundary."""
+import tkinter as tk
 from tkinter import ttk, messagebox
 from .gateway import UserError
 from .interaction_page import MessagePanel
 from . import theme as t
+from .page_design import note_card
 from .widgets import ScrollPage, ItemImage, empty_state
 
 
@@ -46,6 +48,10 @@ class ItemPage(ScrollPage):
         left.grid(row=0, column=0, sticky="nsew", padx=(0,30))
         picture = ItemImage(left, item.get("image_path", ""), item["category"], width=460, height=370)
         picture.pack(fill="x")
+        picture.configure(cursor='hand2')
+        picture.bind('<Button-1>', lambda _: self.zoom_image())
+        t.button(left, '放大查看图片  ↗', self.zoom_image, 'nav').pack(anchor='e', pady=8)
+        note_card(left, '每件好物，都有继续的可能', '01  看清照片、描述与使用情况。\n02  在留言区确认配件和交收安排。\n03  线下见面检查，双方确认后交接。').pack(fill='x', pady=(12,20))
         if picture.reason:
             t.label(left, "卖家未上传可预览的图片，可参考右侧商品描述。", size=10, color=t.MUTED,
                     wraplength=420).pack(anchor="w", pady=10)
@@ -76,6 +82,20 @@ class ItemPage(ScrollPage):
         self.messages_panel = MessagePanel(self.area, self.app, item)
         self.messages_panel.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(25, 0))
         self.messages_panel.start()
+
+    def zoom_image(self):
+        if not self.item:
+            return
+        window = tk.Toplevel(self.app.root)
+        window.title(self.item['name']+' · 商品图片')
+        window.transient(self.app.root)
+        window.geometry('700x600')
+        window.configure(bg=t.WHITE)
+        ItemImage(window, self.item.get('image_path',''), width=660, height=470).pack(fill='both', expand=True, padx=20, pady=20)
+        t.label(window, self.item['name'], bold=True).pack(pady=8)
+        t.button(window, '关闭预览', window.destroy).pack(pady=(0,20))
+        window.bind('<Escape>', lambda _: window.destroy())
+        window.focus_set()
 
     def is_dirty(self):
         return bool(self.messages_panel and self.messages_panel.is_dirty())

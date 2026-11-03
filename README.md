@@ -48,6 +48,7 @@ campus-secondhand/
 │   ├── item_page.py
 │   ├── publish_page.py
 │   ├── account_page.py
+│   ├── page_design.py        # 页面横幅、登录插画和统计快捷入口
 │   ├── theme.py / widgets.py / validation.py
 │   ├── demo.py / assets/     # 虚构演示数据及原创示意图
 │   ├── tests/               # 前端补充测试，不替代 tests_zhao
@@ -89,7 +90,7 @@ python3 -m gui_gao --data-dir ./my_practice_data
 
 正式模式没有预设账号，请先注册。独立前端演示账号为 `gao_demo`，密码为 `Campus123`；其他演示用户和商品也都是虚构数据。前端演示使用系统临时目录，与后端的 `main.py --demo` 分开；自选练习目录会保留数据，请勿提交其 JSON 文件。
 
-Mac 可双击 `gui_gao/启动演示.command`。可选 `.app` 启动器重复打开曾报错，推荐命令行或 `.command`；它们均需要本机 Python/Tkinter。JPEG 预览可由环境中已有的 Pillow 增强，但 Pillow 不是必需依赖。详情见前端 README。
+Mac 可双击 `gui_gao/启动演示.command`。旧的可选 `.app` 启动器因重复打开曾报错且功能重复，已从版本管理移除；保留命令行与 `.command` 两种入口，均需要本机 Python/Tkinter。JPEG 预览可由环境中已有的 Pillow 增强，但 Pillow 不是必需依赖。详情见前端 README。
 
 首次调用任何接口时，`backend_zhang/data/` 下的 `users.json`、`items.json`、`items_deleted.json`
 会自动创建为空数组 `[]`，`items_meta.json` 自动创建为 `{"next_item_id": 1}`。
@@ -155,6 +156,7 @@ if record["deleted"]:
 ### 图形界面（gui_gao，GAO JINGYAN 负责）
 
 - 已接通：登录注册、分类/关键词搜索、价格排序、分页、商品详情、发布编辑、个人商品下架/上架/删除、昵称与密码修改，以及收藏、公开商品留言、发出/收到的购买意向、个人操作记录。
+- 2026-11-04 界面优化：登录/注册插画、密码显示切换和演示账号填入；账号名片与真实数量入口；发布实时预览、内容提示；商品图片放大及四类互动页的横幅、留言气泡、时间线。支持减少动效，页面退出时清理动画任务。
 - 正常业务经 `gateway.py` 调用后端公开服务，遵守 `success/message/data` 返回格式；不直接读写业务 JSON。权限、搜索及状态修改以服务层为准。
 - 服务读写在后台线程执行，处理期间防止重复提交；错误反馈、未保存提醒、删除确认及图片占位均由界面提供。
 - 商品只使用既有“在售 / 已下架”状态；删除历史以只读占位展示。意向服务目前只有创建/查询能力，没有接受、取消、付款或标记成交功能。
@@ -190,7 +192,7 @@ python3 -m unittest discover -s gui_gao/tests -v
 python3 main.py
 ```
 
-2026-11-04 B 版验证：macOS、Python 3.12.14、Tk 9.0.4 下，42 项前端补充测试（18 项核心服务/校验、12 项附加集成、12 项 Tk）全部通过且无跳过，19 项原有后端自检通过。记录见 [TEST_REPORT](gui_gao/TEST_REPORT.md)，逐项要求核对见 [REQUIREMENTS_CHECK](gui_gao/REQUIREMENTS_CHECK.md)。没有图形桌面时 Tk 测试会跳过，不能计为通过；Windows/Linux 真实桌面尚未验证。前端设计、实现及测试使用 Codex 协助，具体贡献与 AI 使用范围见[前端说明](gui_gao/README.md#7-ai-使用说明)。
+2026-11-04 次级页面与登录优化验证：macOS、Python 3.12.14、Tk 9.0.4 下，45 项前端补充测试（18 项核心服务/校验、12 项附加集成、15 项 Tk）全部通过且无跳过。19 项原有后端自检是此前 B 版交付的通过记录，本次仅做前端更新，未重复执行该自检。记录见 [TEST_REPORT](gui_gao/TEST_REPORT.md)，逐项要求核对见 [REQUIREMENTS_CHECK](gui_gao/REQUIREMENTS_CHECK.md)。没有图形桌面时 Tk 测试会跳过，不能计为通过；Windows/Linux 真实桌面尚未验证。前端设计、实现及测试使用 Codex 协助，具体贡献与 AI 使用范围见[前端说明](gui_gao/README.md#7-ai-使用说明)。
 
 后端已为测试提供全部必要条件：
 

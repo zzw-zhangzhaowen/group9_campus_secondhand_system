@@ -1,6 +1,7 @@
 """Searchable marketplace and owner-only listing management."""
 from tkinter import ttk, messagebox
 from . import theme as t
+from .page_design import PageBanner, StatStrip
 from .widgets import ScrollPage, ItemImage, page_title, empty_state, MarketHero
 from .validation import CATEGORIES, SORTS
 
@@ -145,7 +146,12 @@ class MyItemsPage(ScrollPage):
         self.app = app
         self.items = []
         self.filter_value = "全部"
-        page_title(self.body, "我的商品", "在这里管理你发布的闲置，商品信息仅由你修改。")
+        PageBanner(self.body, app, 'MY LITTLE STORE / 我的闲置架', '让闲置继续发光。',
+                   '整理、更新、再出发。每件好物都有下一位主人。', 'keyboard').pack(fill='x', pady=(0,20))
+        self.stats = StatStrip(self.body, [('全部商品', '看看我的闲置', lambda: self.filter('全部')),
+            ('正在出售', '管理在售商品', lambda: self.filter('在售')),
+            ('暂时收起', '查看下架商品', lambda: self.filter('已下架'))])
+        self.stats.pack(fill='x', pady=(0,18))
         self.tabs = ttk.Frame(self.body)
         self.tabs.pack(fill="x", pady=(5,18))
         self.tab_buttons = {}
@@ -179,6 +185,7 @@ class MyItemsPage(ScrollPage):
 
     def render(self):
         self.clear()
+        self.stats.set_counts([len(self.items), sum(i['status']=='在售' for i in self.items), sum(i['status']=='已下架' for i in self.items)])
         for value, button in self.tab_buttons.items():
             count = len([i for i in self.items if value == "全部" or i["status"] == value])
             button.configure(text=f"{value}  {count}", style="Selected.TButton" if value == self.filter_value else "Nav.TButton")

@@ -73,6 +73,30 @@ class TkFlowTests(unittest.TestCase):
         self.assertIsNone(self.gateway.user)
         self.login()
 
+    def test_login_reveal_cleanup_and_minimum_layout(self):
+        self.root.geometry('1000x700')
+        self.root.deiconify()
+        self.root.update_idletasks()
+        page = self.app.page
+        self.assertLessEqual(page.body.winfo_reqwidth(), page.canvas.winfo_width()+2)
+        page.fields['username'].set('student_a')
+        page.fields['password'].set('Wrong123')
+        page.toggle_password()
+        self.assertEqual(page.fields['password'].input.cget('show'), '')
+        page.submit()
+        self.wait()
+        self.assertEqual(page.fields['password'].get(), '')
+        self.assertFalse(page.password_visible)
+        self.assertTrue(page.fields['password'].input.cget('show'))
+        page.artwork.animate(-5)
+        self.app.show('register')
+        self.wait()
+        page = self.app.page
+        page.toggle_password()
+        self.assertEqual(page.fields['confirm'].input.cget('show'), '')
+        self.root.update_idletasks()
+        self.assertLessEqual(page.body.winfo_reqwidth(), page.canvas.winfo_width()+2)
+
     def test_registration_page_and_success(self):
         self.app.show("register")
         self.wait()
@@ -221,6 +245,51 @@ class TkFlowTests(unittest.TestCase):
         image = ItemImage(self.root, str(file))
         self.assertIsNone(image.photo)
         image.destroy()
+
+    def test_live_preview_and_prompts_preserve_existing_text(self):
+        self.login()
+        self.app.show('publish')
+        self.wait()
+        page = self.app.page
+        page.fields['name'].set('台灯')
+        page.fields['price'].set('25')
+        page.fields['description'].set('原有内容')
+        page.add_prompt('附带配件：')
+        self.root.update()
+        self.assertEqual(page.fields['description'].get(), '原有内容\n附带配件：')
+        self.assertEqual(page.live_name.cget('text'), '台灯')
+        self.assertEqual(page.live_price.cget('text'), '¥ 25')
+        self.assertEqual(float(page.progress['value']), 4)
+        page.fields['description'].set('字' * 198)
+        page.add_prompt('附带配件：')
+        self.assertEqual(len(page.fields['description'].get()), 198)
+        self.assertTrue(page.fields['description'].error.cget('text'))
+        page.fields['description'].set('一盏台灯')
+        page.submit()
+        self.wait()
+        panel = self.app.page.messages_panel
+        panel.composer.set('原问题')
+        panel.add_prompt('配件是否齐全？')
+        self.assertEqual(panel.composer.get(), '原问题\n配件是否齐全？')
+        panel.composer.set('')
+
+    def test_account_counts_motion_and_banner_cleanup(self):
+        self.login()
+        self.app.show('account')
+        self.wait()
+        page = self.app.page
+        self.assertEqual([w.cget('text') for w in page.stats.values], ['00','00','00'])
+        page.nickname.set('新昵称')
+        self.assertEqual(page.name_preview.cget('text'), '新昵称')
+        page.nickname.set(page.original_nickname)
+        page.toggle_motion()
+        page.banner.animate(-5)
+        self.assertIsNone(page.banner.job)
+        self.assertEqual(page.banner.offset, 0)
+        page.toggle_motion()
+        page.banner.animate(-5)
+        self.app.show('home')
+        self.wait()
 
     def test_native_png_demo_asset_preview(self):
         asset = Path(__file__).resolve().parents[1]/"assets"/"book.png"

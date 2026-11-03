@@ -1,6 +1,7 @@
 """Favorites, public item discussions, purchase intentions and personal activity."""
 from tkinter import ttk
 from . import theme as t
+from .page_design import PageBanner, note_card
 from .widgets import ScrollPage, Field, ItemImage, page_title, empty_state
 
 TABS = {'favorites': '我的收藏', 'messages': '商品留言', 'intentions': '购买意向', 'logs': '操作记录'}
@@ -25,9 +26,24 @@ class MessagePanel(ttk.Frame):
             self.composer = Field(self, '写一条留言', multiline=True, hint='最多 500 字。此留言会展示给查看商品的同学。')
             self.composer.input.configure(height=3)
             self.composer.pack(fill='x')
+            chips = ttk.Frame(self)
+            chips.pack(fill='x', pady=(0, 12))
+            for text in ['配件是否齐全？', '有什么使用痕迹？', '方便在哪里交收？']:
+                t.button(chips, text+' +', lambda v=text: self.add_prompt(v), 'nav').pack(side='left', padx=(0, 6))
             t.button(self, '发布留言  →', self.send, 'primary').pack(anchor='e')
         else:
             t.label(self, '商品已不可交易，历史留言仍可查看。', color=t.MUTED).pack(anchor='w')
+
+    def add_prompt(self, text):
+        if not self.composer or self.app.busy:
+            return
+        current = self.composer.get()
+        updated = current + ('\n' if current else '') + text
+        if len(updated) > 500:
+            self.composer.show_error('留言最多 500 字，请先精简内容。')
+            return
+        self.composer.set(updated)
+        self.composer.input.focus_set()
 
     def is_dirty(self):
         return bool(self.composer and self.composer.get().strip())
@@ -47,7 +63,7 @@ class MessagePanel(ttk.Frame):
             row.pack(fill='x')
             who = record['nickname'] + (' · 卖家' if record['user_id'] == self.item['seller_id'] else '')
             t.label(row, who, bold=True, color=t.BLUE).pack(anchor='w')
-            t.label(row, record['content'], wraplength=750, justify='left').pack(anchor='w', pady=6)
+            t.label(row, record['content'], wraplength=710, justify='left', bg=t.PALE, padx=16, pady=12).pack(anchor='w', fill='x', pady=6)
             t.label(row, record['created_at'], size=10, color=t.MUTED).pack(anchor='w')
             ttk.Separator(row).pack(fill='x', pady=(10, 0))
 
@@ -63,6 +79,7 @@ class MessagePanel(ttk.Frame):
         def saved(_):
             self.composer.set('')
             self.start()
+            self.app.notify('留言已发布，继续留意同学的回复。')
         self.app.run_task(lambda: self.app.gateway.features.add_message(self.item['id'], text), saved,
                           lambda message: self.feedback.configure(text=message))
 
@@ -74,7 +91,13 @@ class InteractionPage(ScrollPage):
         self.direction = 'sent'
         self.records = []
         self.panel = None
-        page_title(self.body, '喜欢的好物，在这里续上故事。', '收藏心动、聊聊细节，或看看你发出和收到的购买意向。')
+        introductions = {'favorites': ('把心动留住，下次接着逛。', '收藏清单里的好物，都值得再看一眼。'),
+            'messages': ('聊清楚细节，让好物顺利交接。', '按商品整理的公开讨论，点开就能继续对话。'),
+            'intentions': ('从一句「我想要」，开始新故事。', '查看你发出和收到的兴趣，继续沟通交收细节。'),
+            'logs': ('你在校园市集留下的小小足迹。', '仅展示你自己的操作，不记录密码和留言正文。')}
+        title, subtitle = introductions[kind]
+        PageBanner(self.body, app, 'CONNECTIONS / '+TABS[kind], title, subtitle,
+                   'notebook' if kind in ('messages', 'logs') else 'bag').pack(fill='x', pady=(0,22))
         tabs = ttk.Frame(self.body)
         tabs.pack(fill='x', pady=(0, 22))
         for value, title in TABS.items():
@@ -150,7 +173,7 @@ class InteractionPage(ScrollPage):
             for record in records:
                 row = ttk.Frame(self.area, padding=(18, 14), relief='solid', borderwidth=1)
                 row.pack(fill='x', pady=(0, 10))
-                t.label(row, record['action_type'], bold=True).pack(side='left')
+                t.label(row, '●  '+record['action_type'], bold=True, color=t.BLUE).pack(side='left')
                 t.label(row, record.get('detail', ''), color=t.MUTED, wraplength=450).pack(side='left', padx=20)
                 t.label(row, record.get('timestamp', ''), size=10, color=t.MUTED).pack(side='right')
             return

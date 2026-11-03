@@ -67,6 +67,19 @@ class Field(ttk.Frame):
         else:
             self.var.set(value)
 
+    def observe(self, callback):
+        """Notify for typing, paste and programmatic updates without timer polling."""
+        self._observer = callback
+        if self.multiline:
+            def changed(event=None):
+                if self.input.edit_modified():
+                    self.input.edit_modified(False)
+                    callback()
+            self.input.edit_modified(False)
+            self.input.bind("<<Modified>>", changed, add="+")
+        else:
+            self._trace = self.var.trace_add("write", lambda *_: callback())
+
     def show_error(self, message):
         self.error.configure(text=message)
         if not self.multiline:
@@ -74,6 +87,8 @@ class Field(ttk.Frame):
 
     def destroy(self):
         # Release Tcl resources on the UI thread, not a later worker GC cycle.
+        if hasattr(self, "_trace"):
+            self.var.trace_remove("write", self._trace)
         self.var = None
         super().destroy()
 
@@ -193,12 +208,15 @@ class MarketHero(tk.Frame):
             self.art.create_text(x+68, y+119, text=caption, fill=t.INK, font=(t.FAMILY, 8), tags='paper')
         self.art.create_oval(218, 10, 277, 69, fill=t.LIME, outline='', tags='sticker')
         self.art.create_text(248, 39, text='GOOD\nFINDS!', fill=t.INK, font=(t.FAMILY, 9, 'bold'), tags='sticker')
+        self.app = app
         self.job = None
         self.offset = 0
         self.art.bind('<Enter>', lambda e: self.animate(-5))
         self.art.bind('<Leave>', lambda e: self.animate(0))
 
     def animate(self, target):
+        if getattr(self.app, "reduce_motion", False):
+            target = 0
         if self.job:
             self.after_cancel(self.job)
         def step():

@@ -14,6 +14,7 @@ class CampusApp:
         self.root = root
         self.gateway = gateway or Gateway()
         self.demo = demo
+        self.reduce_motion = False
         self.busy = False
         self.closed = False
         self.page = None
