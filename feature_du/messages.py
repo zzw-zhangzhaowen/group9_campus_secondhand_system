@@ -1,33 +1,27 @@
-from backend_zhang.json_store import JsonStore, now_text
-from backend_zhang.response import success, failure
+# messages.py 最终修复版
+from backend_zhang.json_store import JsonArrayStore
 
 class MessageService:
-    def __init__(self, data_file="backend_zhang/data/messages.json"):
-        self.store = JsonStore(data_file)
+    def __init__(self, data_file):
+        self.store = JsonArrayStore(data_file)
 
     def add_message(self, item_id, user_id, content):
-        """新增留言"""
-        if not content or not content.strip():
-            return failure("留言內容不能為空")
-            
-        with self.store.lock:
-            data = self.store.read()
-            messages = data if isinstance(data, list) else []
-            
-            new_msg = {
-                "message_id": len(messages) + 1,
-                "item_id": item_id,
-                "user_id": user_id,
-                "content": content.strip(),
-                "created_at": now_text()
-            }
-            messages.append(new_msg)
-            self.store.write(messages)
-            return success(new_msg, "留言成功")
+        # 读取
+        messages = self.store.load()
+        content = content.strip()
+        if not content:
+            return {"success": False, "message": "留言内容不能为空"}
+        new_msg = {
+            "item_id": item_id,
+            "user_id": user_id,
+            "content": content
+        }
+        messages.append(new_msg)
+        # ✅ write → save，和另外两个模块统一
+        self.store.save(messages)
+        return {"success": True, "message": "留言成功"}
 
     def get_item_messages(self, item_id):
-        """獲取特定商品的全部留言"""
-        data = self.store.read()
-        messages = data if isinstance(data, list) else []
-        item_msgs = [m for m in messages if m.get("item_id") == item_id]
-        return success(item_msgs, "獲取留言成功")
+        messages = self.store.load()
+        result = [msg for msg in messages if msg["item_id"] == item_id]
+        return {"success": True, "data": result}
