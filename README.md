@@ -55,8 +55,12 @@ campus-secondhand/
 │   ├── tools/              # 可选插画生成工具（运行前端不需要）
 │   ├── tests/               # 前端补充测试，不替代 tests_zhao
 │   └── README.md / HANDOFF.md / TEST_REPORT.md
-├── tests_zhao/               # 整组单元测试（ZHAO XIAOJUN，待提交）
-│   └── fixtures/
+├── test_zhao/                    # 整组单元测试与测试文档模块（ZHAO XIAOJUN）
+│   ├──__init__.py
+│   ├──test_all.py               # 集成自动化测试入口：unittest，用户/商品/收藏/意向/留言全套用例，隔离临时 JSON
+│   ├── API_spec.md               # 接口规范文档：后端全部接口定义、入参、返回结构、校验规则、错误文案
+│   ├──test_strategy.md          # 测试策略文档：测试目标、范围、环境、准入准出标准、分工、风险预案
+│   ├──auto_test_record.md       # 自动化测试记录：执行日志、缺陷清单、修复复测记录、测试结果汇总
 ├── docs_huang/               # 报告与 PPT（HUANG BAIQI）
 ├── demo_data/                # 演示数据（python main.py --demo 生成）
 ├── contracts/
