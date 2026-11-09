@@ -189,7 +189,7 @@ if record["deleted"]:
 
 ## 6. 测试与验证范围
 
-整组单元测试由 **ZHAO XIAOJUN** 负责，代码放在 `tests_zhao/`，仍待对应成员提交。Gao 的前端补充测试放在 `gui_gao/tests/`，不替代整组测试分工。
+整组单元测试由 **ZHAO XIAOJUN** 负责，代码放在 `test_zhao/`。Gao 的前端补充测试放在 `gui_gao/tests/`，不替代整组测试分工。
 
 ```bash
 # 前端及后端连接检查（使用临时数据；Tk 测试需要图形桌面）
