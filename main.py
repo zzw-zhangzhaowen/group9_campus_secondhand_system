@@ -1,14 +1,15 @@
-"""校园二手物品管理系统 —— 项目入口（负责人：ZHANG ZHAOWEN 维护后端部分）。
+"""Campus second-hand marketplace - project entry point (owner: ZHANG ZHAOWEN, backend).
 
-后端当前已完成；图形界面由 gui_gao（GAO JINGYAN）负责。
+The backend is complete; the GUI is maintained by gui_gao (GAO JINGYAN).
 
-用法：
-    python main.py            # 后端自检：用临时数据跑一遍核心链路，不写任何正式数据
-    python main.py --demo     # 用 demo_data/ 下的数据跑完整业务流程
-    python main.py --gui      # 启动 Tkinter 界面（依赖 gui_gao 已实现）
+Usage:
+    python main.py            # Backend self-check: run the core flows on temp data, writes nothing
+    python main.py --demo     # Run the full business flow against demo_data/
+    python main.py --gui      # Launch the Tkinter GUI (requires the gui_gao implementation)
 
-注意：--demo 只写 demo_data/，默认自检只写临时目录，
-      正式数据 backend_zhang/data/users.json 与 items.json 不会被动到。
+Note: --demo only writes to demo_data/; the default self-check writes to a
+      temporary directory only, so the production data files
+      backend_zhang/data/users.json and items.json are never touched.
 """
 
 from __future__ import annotations
@@ -33,7 +34,7 @@ def _bind_demo_services(
     items_deleted_file: str = DEFAULT_DEMO_ITEMS_DELETED,
     items_meta_file: str = DEFAULT_DEMO_ITEMS_META,
 ):
-    """把后端默认服务指向 demo_data/，避免演示时污染正式数据。"""
+    """Point the default backend services at demo_data/ so demos never pollute real data."""
     from backend_zhang.item_service import reset_item_service
     from backend_zhang.user_repository import UserRepository
     from backend_zhang.user_service import reset_user_service
@@ -47,7 +48,7 @@ def _bind_demo_services(
 
 def _show(title: str, result: dict) -> None:
     mark = "[OK]  " if result.get("success") else "[FAIL]"
-    print(f"{mark} {title}：{result.get('message')}")
+    print(f"{mark} {title}: {result.get('message')}")
     data = result.get("data")
     if isinstance(data, list):
         for record in data:
@@ -56,70 +57,70 @@ def _show(title: str, result: dict) -> None:
                 ident = record.get("item_id")
             status = record.get("status") or record.get("status_before_delete") or ""
             print(f"        - {ident} {record.get('name')} "
-                  f"{record.get('category')} ￥{record.get('price')} {status}")
+                  f"{record.get('category')} CNY {record.get('price')} {status}")
     elif isinstance(data, dict) and data:
         print(f"        {data}")
 
 
 def run_demo() -> int:
-    """演示后端完整业务流程（数据写在 demo_data/）。"""
+    """Demo the full backend business flow (data written to demo_data/)."""
     from backend_zhang import user_service as us
     from backend_zhang import item_service as its
 
-    # 每次演示都从干净数据开始，保证输出可复现
+    # Start every demo from clean data so the output is reproducible.
     for path in (DEFAULT_DEMO_USERS, DEFAULT_DEMO_ITEMS, DEFAULT_DEMO_ITEMS_DELETED, DEFAULT_DEMO_ITEMS_META):
         if os.path.exists(path):
             os.remove(path)
     _bind_demo_services()
     print("=" * 62)
-    print("校园二手物品管理系统 —— 后端演示（数据目录：demo_data/）")
+    print("Campus Second-hand Marketplace - backend demo (data dir: demo_data/)")
     print("=" * 62)
 
-    _show("注册 alice_01", us.register_user("alice_01", "abcd1234", "小爱"))
-    _show("注册 bob_02", us.register_user("bob_02", "abcd1234", "小明"))
-    _show("重复注册 alice_01", us.register_user("alice_01", "abcd1234", "小爱"))
-    _show("登录 alice_01", us.login_user("alice_01", "abcd1234"))
-    _show("登录密码错误", us.login_user("alice_01", "wrong1234"))
+    _show("Register alice_01", us.register_user("alice_01", "abcd1234", "Alice"))
+    _show("Register bob_02", us.register_user("bob_02", "abcd1234", "Bob"))
+    _show("Register alice_01 again", us.register_user("alice_01", "abcd1234", "Alice"))
+    _show("Login alice_01", us.login_user("alice_01", "abcd1234"))
+    _show("Login with wrong password", us.login_user("alice_01", "wrong1234"))
 
     alice = us.login_user("alice_01", "abcd1234")["data"]["id"]
     bob = us.login_user("bob_02", "abcd1234")["data"]["id"]
 
-    _show("alice 发布 Python 教材",
-          its.create_item(alice, "Python教材", "书籍", 30, "适合初学者的入门教材", ""))
-    _show("alice 发布 机械键盘",
-          its.create_item(alice, "机械键盘", "电子产品", 120, "87 键青轴，九成新", "images/kb.png"))
-    _show("bob 发布 护眼台灯",
-          its.create_item(bob, "护眼台灯", "生活用品", 20, "三档亮度可调", ""))
-    _show("价格填 0（应失败）", its.create_item(bob, "坏数据", "书籍", 0, "价格为0", ""))
+    _show("alice publishes a Python textbook",
+          its.create_item(alice, "Python Textbook", "books", 30, "Beginner-friendly introductory textbook", ""))
+    _show("alice publishes a mechanical keyboard",
+          its.create_item(alice, "Mechanical Keyboard", "electronics", 120, "87-key blue switches, like new", "images/kb.png"))
+    _show("bob publishes a desk lamp",
+          its.create_item(bob, "Desk Lamp", "household", 20, "Three brightness levels", ""))
+    _show("Price set to 0 (should fail)", its.create_item(bob, "Broken Data", "books", 0, "Price is 0", ""))
 
-    _show("按关键词 Python 搜索", its.search_items(keyword="python"))
-    _show("按分类 + 价格升序",
-          its.search_items(category="电子产品", sort_by="price", descending=False))
+    _show("Search by keyword 'python'", its.search_items(keyword="python"))
+    _show("Filter by category, price ascending",
+          its.search_items(category="electronics", sort_by="price", descending=False))
 
-    _show("bob 修改 alice 的商品（应失败）", its.update_item(1, bob, {"price": 1}))
-    _show("alice 修改自己的商品", its.update_item(1, alice, {"price": 25}))
+    _show("bob edits alice's item (should fail)", its.update_item(1, bob, {"price": 1}))
+    _show("alice edits her own item", its.update_item(1, alice, {"price": 25}))
 
-    _show("alice 下架商品 1", its.remove_item(1, alice))
-    _show("默认列表（已下架不可见）", its.get_all_items())
-    _show("包含已下架", its.get_all_items(include_removed=True))
-    _show("alice 重新上架", its.restore_item(1, alice))
-    _show("alice 彻底删除商品 2", its.delete_item_permanently(2, alice))
-    _show("商品 2 是否已删除（归档查询）", its.is_item_deleted(2))
-    _show("商品 2 是否还能查到（应失败）", its.is_item_active(2))
-    _show("已删除商品归档列表", its.list_deleted_items(limit=10))
-    _show("删除后新发布商品（ID 不复用 2）",
-          its.create_item(alice, "高等数学教材", "书籍", 18, "同济第七版", ""))
+    _show("alice takes item 1 off sale", its.remove_item(1, alice))
+    _show("Default listing (off-sale items hidden)", its.get_all_items())
+    _show("Including off-sale items", its.get_all_items(include_removed=True))
+    _show("alice relists the item", its.restore_item(1, alice))
+    _show("alice permanently deletes item 2", its.delete_item_permanently(2, alice))
+    _show("Is item 2 deleted (archive lookup)", its.is_item_deleted(2))
+    _show("Can item 2 still be queried (should fail)", its.is_item_active(2))
+    _show("Deleted item archive", its.list_deleted_items(limit=10))
+    _show("Publish after deletion (ID 2 is not reused)",
+          its.create_item(alice, "Calculus Textbook", "books", 18, "7th edition", ""))
 
     print("-" * 62)
-    print(f"演示数据文件：{DEFAULT_DEMO_USERS}")
-    print(f"              {DEFAULT_DEMO_ITEMS}")
-    print(f"              {DEFAULT_DEMO_ITEMS_DELETED}")
-    print(f"              {DEFAULT_DEMO_ITEMS_META}")
+    print(f"Demo data files: {DEFAULT_DEMO_USERS}")
+    print(f"                 {DEFAULT_DEMO_ITEMS}")
+    print(f"                 {DEFAULT_DEMO_ITEMS_DELETED}")
+    print(f"                 {DEFAULT_DEMO_ITEMS_META}")
     return 0
 
 
 def run_check() -> int:
-    """后端自检：使用临时数据，跑一遍核心链路后自动清理。"""
+    """Backend self-check: runs the core flows on temporary data and cleans up afterwards."""
     import tempfile
 
     from backend_zhang.item_service import ItemService
@@ -142,59 +143,59 @@ def run_check() -> int:
             checks.append((name, not result.get("success")))
 
         print("=" * 62)
-        print("后端自检（临时数据目录，不写正式数据）")
+        print("Backend self-check (temporary data dir, production data untouched)")
         print("=" * 62)
 
-        alice = expect_ok("注册用户", user_service.register("alice_01", "abcd1234", "小爱"))["data"]
-        expect_fail("用户名重复被拒绝", user_service.register("alice_01", "abcd1234", "小爱"))
-        expect_fail("弱密码被拒绝", user_service.register("carol_03", "12345678", "小红"))
-        expect_ok("登录成功", user_service.login("alice_01", "abcd1234"))
-        expect_fail("错误密码被拒绝", user_service.login("alice_01", "bad12345"))
+        alice = expect_ok("Register user", user_service.register("alice_01", "abcd1234", "Alice"))["data"]
+        expect_fail("Duplicate username rejected", user_service.register("alice_01", "abcd1234", "Alice"))
+        expect_fail("Weak password rejected", user_service.register("carol_03", "12345678", "Carol"))
+        expect_ok("Login succeeds", user_service.login("alice_01", "abcd1234"))
+        expect_fail("Wrong password rejected", user_service.login("alice_01", "bad12345"))
 
         item = expect_ok(
-            "发布商品",
-            item_service.create_item(alice["id"], "Python教材", "书籍", 30, "入门教材"),
+            "Publish item",
+            item_service.create_item(alice["id"], "Python Textbook", "books", 30, "Intro textbook"),
         )["data"]
-        expect_fail("价格 0 被拒绝", item_service.create_item(alice["id"], "x", "书籍", 0, "d"))
-        expect_fail("非法分类被拒绝", item_service.create_item(alice["id"], "x", "文具", 10, "d"))
-        expect_ok("按关键词搜索", item_service.search_items(keyword="python"))
-        expect_ok("下架自己的商品", item_service.remove_item(item["id"], alice["id"]))
-        expect_fail("重复下架被拒绝", item_service.remove_item(item["id"], alice["id"]))
-        expect_ok("重新上架", item_service.restore_item(item["id"], alice["id"]))
-        expect_ok("彻底删除", item_service.delete_item_permanently(item["id"], alice["id"]))
-        archived = expect_ok("已删除商品可追溯", item_service.is_item_deleted(item["id"]))
-        checks.append(("归档记录标记为已删除", archived["data"]["deleted"] is True))
-        checks.append(("商品确实已从 items.json 移除", not item_service.item_exists(item["id"])["data"]))
-        expect_fail("已删除商品无法再查询", item_service.get_item_by_id(item["id"]))
+        expect_fail("Zero price rejected", item_service.create_item(alice["id"], "x", "books", 0, "d"))
+        expect_fail("Invalid category rejected", item_service.create_item(alice["id"], "x", "stationery", 10, "d"))
+        expect_ok("Search by keyword", item_service.search_items(keyword="python"))
+        expect_ok("Take own item off sale", item_service.remove_item(item["id"], alice["id"]))
+        expect_fail("Repeated off-sale rejected", item_service.remove_item(item["id"], alice["id"]))
+        expect_ok("Relist item", item_service.restore_item(item["id"], alice["id"]))
+        expect_ok("Permanent delete", item_service.delete_item_permanently(item["id"], alice["id"]))
+        archived = expect_ok("Deleted item is traceable", item_service.is_item_deleted(item["id"]))
+        checks.append(("Archive record marked as deleted", archived["data"]["deleted"] is True))
+        checks.append(("Item really removed from items.json", not item_service.item_exists(item["id"])["data"]))
+        expect_fail("Deleted item can no longer be queried", item_service.get_item_by_id(item["id"]))
         again = expect_ok(
-            "删除后重新发布",
-            item_service.create_item(alice["id"], "高数教材", "书籍", 18, "同济第七版"),
+            "Publish again after deletion",
+            item_service.create_item(alice["id"], "Calculus Textbook", "books", 18, "7th edition"),
         )["data"]
-        checks.append(("删除后 ID 不复用（严格单调）", again["id"] > item["id"]))
+        checks.append(("ID is not reused after deletion (strictly monotonic)", again["id"] > item["id"]))
 
         failed = [name for name, ok in checks if not ok]
         for name, ok in checks:
             print(f"{'[OK]  ' if ok else '[FAIL]'} {name}")
         print("-" * 62)
         if failed:
-            print("自检未通过：" + "、".join(failed))
+            print("Self-check failed: " + ", ".join(failed))
             return 1
-        print(f"自检全部通过（{len(checks)} 项）")
+        print(f"All self-checks passed ({len(checks)} checks)")
         return 0
 
 
 def start_gui() -> int:
-    """启动图形界面（由 gui_gao 提供入口函数 main()）。"""
+    """Launch the GUI (entry function main() provided by gui_gao)."""
     gui_dir = os.path.join(BASE_DIR, "gui_gao")
     try:
         from gui_gao import main as gui_main
     except ImportError:
-        print("未找到图形界面入口 gui_gao.main()（由 GAO JINGYAN 负责）。")
+        print("GUI entry point gui_gao.main() not found (maintained by GAO JINGYAN).")
         if not os.path.isdir(gui_dir) or not os.listdir(gui_dir):
-            print("目录 gui_gao/ 目前为空。")
+            print("The gui_gao/ directory is currently empty.")
         else:
-            print("目录 gui_gao/ 已有文件，但缺少 main() 入口函数。")
-        print("后端可先用：python main.py --demo 验证业务流程。")
+            print("The gui_gao/ directory has files but no main() entry function.")
+        print("You can still verify the backend flow with: python main.py --demo")
         return 1
     gui_main()
     return 0
@@ -202,19 +203,19 @@ def start_gui() -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="校园二手物品管理系统（Python + Tkinter + JSON）",
+        description="Campus Second-hand Marketplace (Python + Tkinter + JSON)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--demo", action="store_true", help="用 demo_data/ 跑一遍完整业务流程")
-    parser.add_argument("--check", action="store_true", help="后端自检（临时数据），默认行为")
-    parser.add_argument("--gui", action="store_true", help="启动图形界面（需 gui_gao 已实现）")
+    parser.add_argument("--demo", action="store_true", help="Run the full business flow against demo_data/")
+    parser.add_argument("--check", action="store_true", help="Backend self-check on temp data (default)")
+    parser.add_argument("--gui", action="store_true", help="Launch the GUI (requires gui_gao)")
     args = parser.parse_args(argv)
 
     if args.demo:
         return run_demo()
     if args.gui:
         return start_gui()
-    # 默认：后端自检
+    # Default: backend self-check.
     return run_check()
 
 

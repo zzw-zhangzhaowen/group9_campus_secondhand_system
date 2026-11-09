@@ -1,6 +1,7 @@
-"""feature_du 与 backend_zhang 对接自检：使用临时数据目录，不写任何正式数据。
+"""Self-check for feature_du against backend_zhang: uses a temporary data dir,
+writes no production data.
 
-用法（在项目根目录）：python feature_du_check.py
+Usage (from the project root): python feature_du_check.py
 """
 import os
 import tempfile
@@ -26,7 +27,7 @@ def main():
         return result
 
     print("=" * 62)
-    print("feature_du 与后端对接自检（临时数据目录）")
+    print("feature_du / backend_zhang integration self-check (temporary data dir)")
     print("=" * 62)
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -44,33 +45,33 @@ def main():
         intentions = IntentionService(intentions_file)
         logs = LogService(logs_file)
 
-        alice = ok("注册用户 alice", user_service.register("alice_01", "abcd1234", "小爱"))["data"]
-        bob = ok("注册用户 bob", user_service.register("bob_02", "abcd1234", "小明"))["data"]
-        item = ok("bob 发布商品",
-                  item_service.create_item(bob["id"], "机械键盘", "电子产品", 120, "87 键青轴"))["data"]
+        alice = ok("Register user alice", user_service.register("alice_01", "abcd1234", "Alice"))["data"]
+        bob = ok("Register user bob", user_service.register("bob_02", "abcd1234", "Bob"))["data"]
+        item = ok("bob publishes an item",
+                  item_service.create_item(bob["id"], "Mechanical Keyboard", "electronics", 120, "87-key blue switches"))["data"]
 
-        ok("alice 收藏商品", favorites.toggle_favorite(alice["id"], item["id"]))
-        ok("alice 再次点击（取消收藏）", favorites.toggle_favorite(alice["id"], item["id"]))
-        ok("alice 收藏列表（应为空）", favorites.get_user_favorites(alice["id"]))
+        ok("alice favorites the item", favorites.toggle_favorite(alice["id"], item["id"]))
+        ok("alice clicks again (unfavorite)", favorites.toggle_favorite(alice["id"], item["id"]))
+        ok("alice's favorite list (should be empty)", favorites.get_user_favorites(alice["id"]))
 
-        ok("alice 提交留言", messages.add_message(item["id"], alice["id"], "键盘还在吗？"))
-        ok("查询商品留言", messages.get_item_messages(item["id"]))
-        expect_fail("空留言被拒绝", messages.add_message(item["id"], alice["id"], "   "))
+        ok("alice posts a message", messages.add_message(item["id"], alice["id"], "Is the keyboard still available?"))
+        ok("Query item messages", messages.get_item_messages(item["id"]))
+        expect_fail("Empty message rejected", messages.add_message(item["id"], alice["id"], "   "))
 
-        ok("alice 提交购买意向", intentions.create_intention(alice["id"], item["id"], bob["id"]))
-        ok("查看意向清单", intentions.get_user_intentions(alice["id"]))
+        ok("alice submits a purchase intent", intentions.create_intention(alice["id"], item["id"], bob["id"]))
+        ok("View intent list", intentions.get_user_intentions(alice["id"]))
 
-        ok("记录操作日志", logs.log_action(alice["id"], "favorite", "收藏商品"))
-        ok("读取全部日志", logs.get_logs())
+        ok("Record an action log", logs.log_action(alice["id"], "favorite", "Favorited an item"))
+        ok("Read all logs", logs.get_logs())
 
         failed = [name for name, passed in checks if not passed]
         for name, passed in checks:
             print(f"{'[OK]  ' if passed else '[FAIL]'} {name}")
         print("-" * 62)
         if failed:
-            print("对接自检未通过：" + "、".join(failed))
+            print("Integration self-check failed: " + ", ".join(failed))
             return 1
-        print(f"feature_du 与后端对接自检全部通过（{len(checks)} 项）")
+        print(f"All feature_du / backend_zhang integration checks passed ({len(checks)} checks)")
         return 0
 
 
