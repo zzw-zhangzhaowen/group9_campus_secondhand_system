@@ -1,53 +1,50 @@
-# B 版前端交接 · 2026-11-04
+# Frontend handoff — Design B
 
-## 本次交付
+Updated on 10 November 2026. The English UI was first checked against `b603d99`, then adapted to the team's latest upstream `7ef1a95` before delivery. Implementation stays in `gui_gao/`; only Gao's sections of the shared README and repository guide are updated. The standalone browser preview remains separate. Remote delivery is established by the commit containing this record, not by this document alone.
 
-Gao 选定 B「活力市集」后，在 `gui_gao/` 实现正式 Tkinter 页面，保留组内 Python 技术路线。核心用户/商品流程之外，互动中心增加**我的收藏、商品留言、购买意向、操作记录**四个独立页面；商品详情提供收藏、我想要和公开留言。首页保留蓝色/浅黄绿色视觉及短促悬停动效，所有按钮可用键盘操作。
+## Start and demonstrate
 
-实施基线为 `1971a062fbd5abffbeef1fdea740162e42126185`。本次只修改前端、对应说明和 `.gitignore` 的附加数据规则；`backend_zhang/`、`feature_du/`、`contracts/`、根 `main.py` 保持原样。本地版本不等于已推送的远端版本。
+- Production: `python3 main.py --gui` from the repository root; register on first use.
+- Isolated demo: `python3 -m gui_gao --demo`, or open `gui_gao/launch_demo.command` on macOS.
+- Demo credentials: `gao_demo` / `Campus123`. Demo accounts and items are fictional.
+- Production data is in `backend_zhang/data/`. `--data-dir` selects a practice directory. `--demo` creates temporary data and clears it on normal exit. Do not share one directory between concurrent processes.
 
-## 2026-11-04 次级页面与登录优化
+Suggested walkthrough: sign in, filter/search, open another seller's item, save/comment/send an enquiry, visit all four Community pages, inspect received enquiries, take an own item off sale and relist it, then check Activity log. The browser version uses sample data and does not test the desktop backend.
 
-基于 `aa444880ef55249eec057d17821a41a00aa8271f` 原位更新前端。新增 `page_design.py` 统一登录插画、页面横幅和数量快捷入口；账号、发布、商品管理、详情和四类附加页补充视觉层次与交互。正式服务入口和数据约定保持原样；45 项前端补充检查通过且无跳过，见 TEST_REPORT。
+## Language boundary
 
-旧 `.app` 启动包装因与 `.command` 功能重复且曾报重复打开失败，退出版本管理；保留命令行和 `启动演示.command`。旧版可从 Git 历史恢复。网页设计比较稿仍独立保留在本机，不混入正式 Tkinter 程序。
+The GUI displays Books, Electronics, Clothing, Home & Living, Available and Off sale. `localization.py` maps these to the current backend enums: `books`, `electronics`, `clothing`, `household`, `on_sale` and `off_sale`. It also recognizes legacy labels for display. User-written content is preserved. Stored files are not migrated or rewritten by this conversion. Errors are translated in Gao's adapter. Keep these mappings in the frontend unless the group jointly changes its data contract.
 
-## 启动与演示
+The English launcher is the preferred path. A small shortcut at the historical launcher path preserves existing links and local shortcuts.
 
-- 正式：仓库根目录运行 `python3 main.py --gui`，首次注册账号。
-- 隔离演示：`python3 -m gui_gao --demo`，或双击 `gui_gao/启动演示.command`。
-- 演示登录：`gao_demo` / `Campus123`。示例中有自己和其他卖家的商品、双方留言、发出及收到的购买意向。其他演示用户见 `demo.py`。
-- 正式数据在 `backend_zhang/data/`；`--data-dir` 可指定练习目录；`--demo` 使用临时目录，关闭后清理。不要多进程共写同一目录。
+## Additional-service compatibility
 
-建议演示顺序：登录 → 分类搜索 → 他人商品详情 → 收藏/留言/提交意向 → 互动中心四页 → 我收到的意向 → 我的商品上下架 → 查看个人操作记录。原浏览器里的四版页面仍是设计比较稿，实际功能演示请用 Tkinter。
+The private loader in `feature_gateway.py` adapts imports inside the four feature modules only. Current services use `JsonArrayStore.transaction` and validate users/items through module imports:
 
-## 前端兼容层说明（请互动负责人确认）
-
-`feature_gateway.py` 将队友四个模块加载到私有模块对象，局部替换它们对 `backend_zhang.json_store` 的导入：
-
-| 队友模块目前调用 | 前端映射 |
+| Existing call | Frontend adapter |
 |---|---|
 | `JsonStore` / `JsonArrayStore` | `StoreBridge(JsonArrayStore)` |
-| `.lock` | 核心后端按文件绝对路径共享的 `RLock` |
+| `.lock` | Backend path-specific shared `RLock` |
 | `.read()` | `.load()` |
 | `.write(records)` | `.save(records)` |
+| Imported user/item services | The current gateway's service instances, preserving isolated demo/practice data |
 
-这一做法不改队友源文件、不修改全局模块，也不复制四个服务的业务逻辑。收藏切换、留言提交、意向创建、日志记录都执行队友实际方法。核心存储的原子写入及损坏报错保留。原始 `feature_du` 直接导入的接口问题仍需负责人统一；目前联调入口是前端兼容层。
+Source files and global imports remain unchanged. Saves execute the real services and retain atomic storage and corrupt-file errors. The current team modules import successfully; their module-level validation still needs context binding when used with non-default data. The frontend provides that binding locally rather than resetting global defaults. A regression test blocks all access to default production services while exercising demo interactions.
 
-个人留言列表缺少对应服务方法，因此兼容层通过 `MessageService.store.read()` 取得候选商品 ID，再调用 `get_item_messages`，仅显示自己参与或自己商品的讨论，含下架和删除历史。请后续提供 `get_user_threads(user_id)` 等公开查询，届时替换此步骤。没有直接打开 JSON 文件。
+The current favorite query omits deleted items. The frontend reads saved IDs through `FavoriteService.store.load()` to retain read-only history, then resolves item details through public services. It does not write those records itself. Saving/removal still calls `toggle_favorite`; the returned record or `None` is normalized to a UI boolean. The team service rejects toggles for off-sale/deleted items, so the GUI hides Unsave for those entries.
 
-当前服务仅支持 `pending` 购买意向；前端只做提交及双方查询，不提供没有后端支持的接受/取消/支付按钮。身份绑定、不能向自己商品提交、重复意向和非在售商品拦截由前端网关补充；这是单机使用约束，未来若上线网络服务需移至后端授权层。
+The services do not expose a personal-thread query. The adapter obtains candidate item IDs using `MessageService.store.read()`, then calls `get_item_messages`. It shows discussions on the user's items or discussions they joined, including unavailable/deleted items. Replace this step when a public `get_user_threads(user_id)` method is supplied. The frontend does not directly open business JSON files.
 
-四类互动数据都跟随所选数据目录；正式文件列入 `.gitignore`。日志仅记录动作、商品编号/标题或昵称修改动作，不保存密码或留言正文。日志故障会显示“操作已保存，但操作记录暂未写入”，不会把业务重复执行。
+Enquiries currently support creation and query only, with a `pending` status. The GUI adds signed-in identity, self-enquiry, duplicate and availability guards. These are single-machine constraints; a future network service must enforce them server-side. Do not add accept/cancel/payment buttons without supporting services.
 
-## 后续协作
+Activity records contain action names and item IDs/titles, not passwords or comment text. A logging failure does not undo or repeat a successful business action. Stored English action labels and legacy labels can coexist; the latter are translated for display.
 
-1. DU YI 确认兼容层与附加功能数据约定，统一存储接口并补公开个人讨论查询；统一后移除私有加载兼容。
-2. ZHAO XIAOJUN 维护 `tests_zhao/` 整组测试，并在最终演示电脑检查；Gao 的测试在 `gui_gao/tests/`。
-3. HUANG BAIQI 按真实功能更新报告/PPT/用户手册，说明公开留言和购买意向的边界及实际 AI 使用。
-4. 图片保存本地路径，整组演示需携带图片；仓库相对路径从仓库根目录解析。币种目前沿用 `¥`，若决定使用港币，应统一全组。
-5. 上传仅选择本次前端、说明文档与 `.gitignore` 变更；查看差异后再提交，不使用 `git add .`。
+## Remaining group coordination
 
-## 学习阅读顺序
+1. DU YI and the backend owner should agree service-instance injection, a personal-thread query and whether unavailable saved items can be removed. Replace the private loader/read-only history bridge when public interfaces cover these needs.
+2. ZHAO XIAOJUN owns group testing in `test_zhao/`; Gao's supplementary tests remain under `gui_gao/tests/`.
+3. HUANG BAIQI should align the report, slides and user manual with actual public-comment and enquiry behaviour and AI use.
+4. Carry local photo files to the demonstration machine and test there. Relative paths resolve from the repository root. Agree any currency change as a group.
+5. Review and stage only owned paths. Exclude production records, caches and obsolete app wrappers.
 
-先看 `gateway.py` 的登录/返回格式，再看 `app.run_task()`；随后看 `item_page.py` 的收藏、意向与 `interaction_page.py` 的留言；最后读兼容层和 `tests/test_features.py`。测试包含应被拒绝的输入，测试通过表示结果符合预期，并不表示所有输入都应成功。
+Recommended reading order: `gateway.py`, `localization.py`, `app.run_task()`, the item and interaction pages, then `feature_gateway.py` and the tests. Passing a rejection test means invalid input was correctly refused; it does not mean every input should succeed.

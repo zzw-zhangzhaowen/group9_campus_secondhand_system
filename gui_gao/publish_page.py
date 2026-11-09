@@ -17,9 +17,9 @@ class PublishPage(ScrollPage):
         self.original = None
         self.path = ""
         self.image_changed = False
-        PageBanner(self.body, app, 'START A NEW CHAPTER / 闲置新生',
-            '为好物补充一些细节。' if item_id else '下一段故事，从这里开始。',
-            '边填写，边预览。清楚的照片和真实描述，让沟通更轻松。', 'bag').pack(fill='x', pady=(0, 20))
+        PageBanner(self.body, app, 'START A NEW CHAPTER / LIST AN ITEM',
+            'Update your item.' if item_id else 'List your item.',
+            'Preview as you type. Add a clear photo and an accurate description.', 'bag').pack(fill='x', pady=(0, 20))
         self.area = ttk.Frame(self.body)
         self.area.pack(fill="both", expand=True, pady=(10,0))
 
@@ -30,14 +30,14 @@ class PublishPage(ScrollPage):
             def load():
                 item = self.app.gateway.detail(self.item_id)
                 if item["seller_id"] != self.app.gateway.user_id():
-                    raise UserError("只能编辑自己发布的商品。")
+                    raise UserError("You can only edit your own listings.")
                 return item
             self.app.run_task(load, self.form, self.failed)
 
     def failed(self, message):
         for child in self.area.winfo_children():
             child.destroy()
-        empty_state(self.area, "无法编辑这件商品", message, self.start)
+        empty_state(self.area, "Could not edit this item", message, self.start)
 
     def form(self, item):
         for child in self.area.winfo_children():
@@ -47,7 +47,7 @@ class PublishPage(ScrollPage):
         self.area.columnconfigure(1, weight=3)
         left = ttk.Frame(self.area, padding=(0,0,30,0))
         left.grid(row=0, column=0, sticky="nsew")
-        t.label(left, "商品图片（选填）", bold=True).pack(anchor="w", pady=(0,12))
+        t.label(left, "Item photo (optional)", bold=True).pack(anchor="w", pady=(0,12))
         self.preview = ttk.Frame(left)
         self.preview.pack(fill="x")
         self.refresh_image()
@@ -55,9 +55,9 @@ class PublishPage(ScrollPage):
         self.filename.pack(anchor="w", pady=10)
         controls = ttk.Frame(left)
         controls.pack(fill="x", pady=(8,15))
-        t.button(controls, "选择图片", self.choose_image).pack(side="left", padx=(0,8))
-        t.button(controls, "移除图片", self.remove_image, "nav").pack(side="left")
-        t.label(left, "支持 PNG / GIF；图片可选，不上传也可发布。\n图片保存在你选择的本地位置，请勿移动原文件。",
+        t.button(controls, "Choose image", self.choose_image).pack(side="left", padx=(0,8))
+        t.button(controls, "Remove image", self.remove_image, "nav").pack(side="left")
+        t.label(left, "PNG / GIF supported. A photo is optional.\nKeep the original file in its current location.",
                 color=t.MUTED, size=10, wraplength=350, justify="left").pack(anchor="w")
         self.image_error = t.label(left, "", color=t.RED, size=10, wraplength=350, justify="left")
         self.image_error.pack(anchor="w", pady=10)
@@ -69,15 +69,15 @@ class PublishPage(ScrollPage):
         self.readiness.pack(anchor='w', pady=(20, 8))
         self.progress = ttk.Progressbar(left, maximum=4)
         self.progress.pack(fill='x')
-        note_card(left, '给下一位主人多一点了解', '01  说明商品的新旧程度。\n02  列清楚一起附送的配件。\n03  如实描述磨损或需要留意的细节。').pack(fill='x', pady=20)
+        note_card(left, 'Help the buyer understand your item', '01  Describe the condition.\n02  List any included accessories.\n03  Mention wear, damage or other details.').pack(fill='x', pady=20)
         right = ttk.Frame(self.area)
         right.grid(row=0, column=1, sticky="nsew")
         self.fields = {
-            "name": Field(right, "商品名称 *", item.get("name", ""), hint="最多 20 个字符，例如：Python 入门教材。"),
-            "category": Field(right, "分类 *", item.get("category", CATEGORIES[0]), choices=CATEGORIES),
-            "price": Field(right, "价格（¥）*", f"{item['price']:.2f}" if "price" in item else "", hint="价格需大于 0，保存时保留两位小数。"),
-            "description": Field(right, "商品描述 *", item.get("description", ""), multiline=True,
-                                 hint="最多 200 个字符。建议说明新旧程度、使用情况和配件。"),
+            "name": Field(right, "Item name *", item.get("name", ""), hint="Up to 20 characters, e.g. Python textbook."),
+            "category": Field(right, "Category *", item.get("category", CATEGORIES[0]), choices=CATEGORIES),
+            "price": Field(right, "Price (¥) *", f"{item['price']:.2f}" if "price" in item else "", hint="Price must be positive and is saved to two decimal places."),
+            "description": Field(right, "Description *", item.get("description", ""), multiline=True,
+                                 hint="Up to 200 characters. Include condition, use and accessories."),
         }
         for field in self.fields.values():
             field.pack(fill="x")
@@ -85,17 +85,17 @@ class PublishPage(ScrollPage):
         self.error.pack(anchor="w", pady=(0,12))
         buttons = ttk.Frame(right)
         buttons.pack(fill="x", pady=10)
-        t.button(buttons, "保存修改" if self.item_id else "发布商品", self.submit, "primary").pack(side="right")
-        t.button(buttons, "取消", lambda: self.app.show("mine" if self.item_id else "home")).pack(side="right", padx=12)
+        t.button(buttons, "Save changes" if self.item_id else "List item", self.submit, "primary").pack(side="right")
+        t.button(buttons, "Cancel", lambda: self.app.show("mine" if self.item_id else "home")).pack(side="right", padx=12)
         chips = ttk.Frame(right)
         chips.pack(fill='x', pady=(6, 12))
-        for text in ['使用情况：', '附带配件：', '需要留意：']:
+        for text in ['Condition: ', 'Accessories: ', 'Please note: ']:
             t.button(chips, text[:-1]+' +', lambda v=text: self.add_prompt(v), 'nav').pack(side='left', padx=(0, 5))
         for field in self.fields.values():
             field.observe(self.update_preview)
         self.update_preview()
-        self.photo_check = LocalChecklist(left, '让照片替好物说话。', [
-            '拍到物品整体，背景尽量简单', '补充使用痕迹和配件说明', '确认照片与实际商品一致'])
+        self.photo_check = LocalChecklist(left, 'Photo checklist', [
+            'Show the whole item against a plain background', 'Describe any wear and included accessories', 'Make sure the photo shows the actual item'])
         self.photo_check.pack(fill='x', pady=16)
         self.original = self.values()
 
@@ -106,15 +106,15 @@ class PublishPage(ScrollPage):
         errors = item_errors(values)
         count = sum(key not in errors for key in ('name', 'category', 'price', 'description'))
         self.progress['value'] = count
-        self.readiness.configure(text=f'信息准备度  {count} / 4  ·  图片选填')
-        self.live_name.configure(text=values['name'].strip() or '你的好物名称')
+        self.readiness.configure(text=f'Ready: {count} / 4 fields · Photo optional')
+        self.live_name.configure(text=values['name'].strip() or 'Your item name')
         self.live_price.configure(text='¥ '+(values['price'].strip() or '—'))
 
     def add_prompt(self, text):
         current = self.fields['description'].get()
         updated = current + ('\n' if current else '') + text
         if len(updated) > 200:
-            self.fields['description'].show_error('描述最多 200 字，请先精简内容。')
+            self.fields['description'].show_error('Descriptions are limited to 200 characters. Please shorten the text.')
             return
         self.fields['description'].set(updated)
         self.fields['description'].input.focus_set()
@@ -127,7 +127,7 @@ class PublishPage(ScrollPage):
         return self.original is not None and self.values() != self.original
 
     def file_label(self):
-        return Path(self.path).name if self.path else "尚未选择图片"
+        return Path(self.path).name if self.path else "No image selected"
 
     def refresh_image(self):
         for child in self.preview.winfo_children():
@@ -138,15 +138,15 @@ class PublishPage(ScrollPage):
     def choose_image(self):
         if self.app.busy:
             return
-        path = filedialog.askopenfilename(parent=self.app.root, title="选择商品图片",
-            filetypes=[("PNG / GIF 图片", "*.png *.gif"), ("所有文件", "*")])
+        path = filedialog.askopenfilename(parent=self.app.root, title="Choose item image",
+            filetypes=[("PNG / GIF images", "*.png *.gif"), ("All files", "*")])
         if not path:
             return
         self.path = path
         self.image_changed = True
         self.refresh_image()
         self.filename.configure(text=self.file_label())
-        self.image_error.configure(text="请选择可预览的 PNG / GIF 图片（不超过 20 MB）。" if self.picture.reason else "")
+        self.image_error.configure(text="Choose a valid PNG / GIF image up to 20 MB." if self.picture.reason else "")
 
     def remove_image(self):
         if not self.app.busy:
@@ -167,7 +167,7 @@ class PublishPage(ScrollPage):
         # Existing unavailable photos are preserved on edit. New invalid photos
         # are rejected with the explicit option to remove the image.
         if self.image_changed and self.path and self.picture.reason:
-            self.image_error.configure(text="这张图片无法预览，请重新选择或移除图片。")
+            self.image_error.configure(text="This image cannot be previewed. Choose another or remove it.")
             return
         self.error.configure(text="")
         def saved(item):

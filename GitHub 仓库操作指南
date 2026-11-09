@@ -24,6 +24,7 @@ campus-secondhand/
 │   ├── __main__.py           # 独立演示 / 独立数据目录
 │   ├── app.py
 │   ├── gateway.py            # 后端公开服务适配
+│   ├── localization.py       # English labels / backend enum mapping
 │   ├── feature_gateway.py    # 附加服务局部存储兼容
 │   ├── interaction_page.py   # 四类附加页面
 │   ├── login_page.py
@@ -37,7 +38,7 @@ campus-secondhand/
 │   ├── assets/scenes/       # 原创分层 PNG，运行时直接读取
 │   ├── tools/              # 可选插画生成源，不是运行依赖
 │   ├── tests/               # 前端补充测试
-│   ├── 启动演示.command
+│   ├── launch_demo.command   # macOS demo; historical shortcut retained
 │   └── README.md / HANDOFF.md / TEST_REPORT.md
 │
 ├── tests_zhao/
@@ -72,36 +73,35 @@ HUANG BAIQI：docs_huang/ —— 项目报告、用户手册、PPT 和中英文�
 
 3. 公共接口文档放在：contracts/
 
-4. Gao 前端接入与启动
+4. Gao frontend: integration and startup
 
-使用带 Tkinter 的 Python 3.10+，在仓库根目录运行：
+Use Python 3.10+ with Tkinter, from the repository root:
 
   python3 main.py --gui
 
-根入口已调用 gui_gao.main()，无需把前端文件复制到 backend_zhang/，也无需修改队友的 main.py。正式模式先注册自己的账号。
+The existing main.py calls gui_gao.main(). Register on first use. No teammate entry-point changes are needed.
 
-建议第一次先运行独立演示：
+For an isolated demonstration:
 
   python3 -m gui_gao --demo
 
-演示账号 gao_demo，密码 Campus123。使用临时目录内的虚构用户和商品，正常关闭后清理，不修改正式数据。Mac 也可双击 gui_gao/启动演示.command。重复打开曾报错且功能重复的旧 .app 启动器已从版本管理移除；使用命令行或 .command，不需要修改根 main.py。
+On macOS, open gui_gao/launch_demo.command. The old launcher path remains a small compatibility shortcut. The obsolete .app wrapper is not included. Demo credentials are gao_demo / Campus123, with fictional users/items in a temporary directory that is removed on normal exit.
 
-已接通：登录注册、商品浏览/搜索/排序/分页、详情、发布编辑、个人商品上下架与删除、昵称和密码修改，以及收藏、留言、购买意向和个人日志。页面通过前端网关调用服务，不直接读写 JSON。
+The 10 November English version integrates with upstream 7ef1a95. Pages, prompts, sample content, comments and frontend documentation are English. Display labels map to the current books/electronics/clothing/household and on_sale/off_sale enums. User-authored text is preserved; data is not migrated.
 
-附加页面执行 feature_du/ 的真实业务方法；feature_gateway.py 只在私有模块内适配存储方法名称，不改队友源文件。意向当前为提交/查询，没有支付、接受或取消接口；后续请互动负责人统一存储接口与个人讨论查询，详见 gui_gao/HANDOFF.md。四类正式附加数据 JSON 已补入 .gitignore，不上传真实数据。
+Connected pages include sign-in/registration, browse/search/sort/pagination, details, publish/edit, own listings, account settings, saved items, public comments, enquiries and activity. Design B's illustrations, live previews, image zoom, checklist interactions and controllable route/clock animations are retained.
 
-本次次级页面优化包含：登录/注册插画与密码显示切换、演示账号一键填入、账号名片与真实数量入口、发布实时预览及内容提示、图片放大、四类互动页面的插画与留言/记录布局。短暂悬停动画可关闭。功能继续调用原有服务；网页设计比较稿仍是独立模拟预览，不作为正式后端入口。
+Feature services execute their actual business methods. Gao's local adapter binds validation to the selected user/item services so demo/practice directories remain isolated. It normalizes favorite results without editing feature_du. Unavailable saved items are read-only history because the current service rejects all favorite toggles for off-sale/deleted items. Enquiries support creation/query only; no payment/accept/cancel actions are added. See gui_gao/HANDOFF.md for service-context injection and query handoff needs.
 
-本轮进一步补充：不同板块的原创插画、台灯开关、首页场景入口、拍照/交接自检、收藏筛选、记录搜索、留言字数和图片缩放/复位。路线标记依次跳到 1、2、3；时钟保持钟面固定、指针逐格跳动，均有暂停和减少动效控制。只改变前端展示与局部交互，不更新交易状态或队友接口。所需 PNG 一并上传；gui_gao/tools/build_scene_art.py 是可选生成源，需要 Pillow，正常启动仍无需安装新依赖。
+The standalone web design prototype remains separate and is not a production backend entry point or part of this upload. Runtime JSON, caches and obsolete wrappers are excluded.
 
-5. 检查与分工交接
+5. Gao frontend checks and handoff
 
   python3 -m unittest discover -s gui_gao/tests -v
-  python3 main.py
 
-2026-11-04 插画与动效更新记录：macOS / Python 3.12.14 / Tk 9.0.4，49 项前端补充测试无跳过通过，包含动画暂停、减少动效和任务清理。网页路线/时钟已实看；这两处原生桌面动画的人工视觉核对尚待完成。19 项后端自检为此前 B 版交付的通过记录，本次未重复执行。Tk 测试需要图形桌面，跳过不能计为通过；Windows/Linux 桌面尚未实测。详情见 gui_gao/TEST_REPORT.md。
+On 10 November, all 55 frontend checks passed with no skips in 7.604 seconds on macOS / Python 3.12.14. The checks include real Tk pages, English enum mapping, isolated feature validation, matching IDs in independent directories, animation pause/reduced motion and task cleanup. The earlier 19 backend-check passes are historical, not a new result. Windows/Linux native rendering and the group's final demonstration machine remain unverified.
 
-Gao 的测试保留在 gui_gao/tests/，整组 tests_zhao/ 仍由测试负责人维护；报告、PPT 和用户手册由 docs_huang/ 负责人维护。交付后仍需小组联调与最终演示核对。前端 AI 使用说明见 gui_gao/README.md，报告应据实际贡献如实披露。
+Gao's supplementary tests stay in gui_gao/tests/. Group tests remain owned by ZHAO XIAOJUN in test_zhao/, and report/slides/manual remain owned by HUANG BAIQI. This delivery changes no teammate code. See gui_gao/TEST_REPORT.md for current and historical results and gui_gao/README.md for AI-use disclosure.
 
 6. 按目录提交，上传后同步说明
 

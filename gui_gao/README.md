@@ -1,136 +1,114 @@
-# Group 9 · GAO JINGYAN 前端交付
+# Group 9 frontend — GAO JINGYAN
 
-这是校园二手系统的 **Python Tkinter 前端**，按 Gao 于 2026-11-04 选定的 **B「活力市集」**设计实现：蓝色主视觉、浅黄绿色行动按钮、横向导航与商品卡片。可接入组内现有后端，不是网页，也不是独立实现的第二套后端。
+This is the campus second-hand project's Python Tkinter frontend. Design B uses blue, lime accents, illustrated sections and item cards. The desktop application calls the team's existing services. The separate browser prototype is a design preview with sample data.
 
-初次前端交付基于仓库 `82a3a1d5d15187fa075222ea15d7a52386b845b6`（main），新增文件全部在 `gui_gao/`。2026-11-04 在当前仓库基础上完成 B 版与附加功能页面，并同步根 README、操作指南和数据忽略规则；没有修改队友的后端、互动模块、根目录入口或契约代码。
+The implementation is confined to `gui_gao/`. The shared README and repository guide update only Gao's delivery notes. The main entry point, contracts, backend and other members' code are unchanged by this delivery. This version integrates with upstream `7ef1a95`.
 
-## 1. 运行
+## Run
 
-在包含 `main.py`、`backend_zhang/` 和 `gui_gao/` 的仓库根目录运行，使用 **Python 3.10+，需带 Tkinter**。核心功能和 PNG/GIF 图片预览仅用标准库，不需要安装依赖。
+From the repository root, use Python 3.10 or later with Tkinter:
 
 ```sh
 python3 main.py --gui
 ```
 
-第一次正式运行没有默认账号；请点“注册账号”。正式模式使用后端既有的 `backend_zhang/data/`，由后端管理持久化。
+Create an account on first use. Production data is managed by the backend in `backend_zhang/data/`.
 
-### 推荐先看演示
+For an isolated demo:
 
 ```sh
 python3 -m gui_gao --demo
 ```
 
-Mac 推荐双击本目录的 `启动演示.command`，或在仓库根目录运行上面的演示命令。启动脚本会查找带 Tkinter 的 Python 3.10+；若 `python3` 指向旧的系统 Python，请改用已安装的新版本解释器。
+On macOS, you can double-click `launch_demo.command`. The older launcher is retained as a small compatibility shortcut so existing links in the shared README still work.
 
-旧的 `校园二手演示.app` 仅是重复的启动包装，并非独立安装包；因曾发生重复打开失败，已从 Git 版本管理移除。请统一使用 `启动演示.command` 或命令行。已有本地副本不再上传，旧版可从 Git 历史恢复。
+- Demo username: `gao_demo`; password: `Campus123`.
+- Three fictional users, eight illustrated items, saved items, public discussions, sent/received enquiries and activity records.
+- Temporary demo data is cleared on normal exit. It does not read or change production users or items.
+- For a separate practice folder, run `python3 -m gui_gao --data-dir /path/to/practice-data`. Do not run multiple processes against the same directory.
+- The removed macOS `.app` wrapper is obsolete. Use the command or launcher above.
 
-- 演示账号：`gao_demo`；密码：`Campus123`。
-- 三位虚构用户、八件示例商品，以及收藏、双方留言、发出/收到的购买意向和个人记录；插画是为本演示制作的示意图，不是真实商品照片。
-- 每次启动在系统临时目录创建数据，正常关闭后清理；不读取或修改正式用户和商品。
-- 如需单独保存自己的练习数据，可以运行 `python3 -m gui_gao --data-dir /你选择的独立目录`。不要同时启动两个进程写同一目录。
+## Pages and connected functions
 
-## 2. 已接通的流程
-
-| 页面 | 实际功能 | 后端接口 |
+| Page | Functions | Existing service |
 |---|---|---|
-| 登录 / 注册 | 登录失败提示、注册字段验证、重复用户名反馈、退出清理会话 | `login_user`, `register_user` |
-| 逛校园 | 商品卡片、分类与关键词组合搜索、价格排序、12 件一页、空列表和重试 | `search_items`, `get_public_user_info` |
-| 商品详情 | 图片、描述、价格、卖家、状态和时间；自己的商品提供编辑入口 | `get_item_by_id`, `get_public_user_info` |
-| 发布 / 编辑 | 名称、分类、价格、描述、选填本地图片，保存前验证、未保存离开确认 | `create_item`, `update_item` |
-| 我的商品 | 仅自己的列表；编辑、下架、重新上架、永久删除二次确认 | `get_items_by_seller`, `remove_item`, `restore_item`, `delete_item_permanently` |
-| 账号设置 | 修改昵称、验证旧密码后修改密码；进入个人操作记录 | `update_nickname`, `change_password` |
-| 我的收藏 | 详情页收藏/取消，独立列表；商品下架/删除后仍能取消收藏 | `FavoriteService` |
-| 商品留言 | 商品详情留言、个人相关讨论列表、历史讨论查看、草稿离开提醒 | `MessageService` |
-| 购买意向 | 向他人商品提交意向；我发出/我收到切换；拦截重复和自己购买自己 | `IntentionService` |
-| 操作记录 | 仅展示当前用户的核心及互动操作，最新在前 | `LogService` |
+| Sign in / Register | Field validation, duplicate usernames, failed-login feedback, session cleanup | `login_user`, `register_user` |
+| Browse | Category and keyword search, price sorting, 12 items per page, empty states and retry | `search_items`, `get_public_user_info` |
+| Item details | Photo, description, price, seller, status, timestamps and owner edit link | `get_item_by_id`, `get_public_user_info` |
+| List / Edit item | Name, category, price, description, optional local photo, validation and unsaved-change prompt | `create_item`, `update_item` |
+| My listings | Own items, edit, take off sale, relist and confirmed permanent deletion | `get_items_by_seller`, `remove_item`, `restore_item`, `delete_item_permanently` |
+| Account | Display name, current-password verification and password change, activity link | `update_nickname`, `change_password` |
+| Saved items | Save/unsave available items; personal list and read-only unavailable-item history | `FavoriteService` |
+| Comments | Public item discussions, related threads, 500-character limit, draft warning | `MessageService` |
+| Enquiries | Send interest, view sent/received records, reject duplicate and self enquiries | `IntentionService` |
+| Activity log | Current user's actions, newest first, search within displayed records | `LogService` |
 
-仅有后端现有的“在售 / 已下架”两种状态。购买意向不是付款、预订或成交；公开商品留言不是私聊。收藏与留言成功提示均以实际服务保存结果为准。公共列表排除已下架商品。永久删除无法通过 GUI 恢复；后端归档仅供追溯。
+Available and Off sale are the two existing item states. Enquiries do not make payments, reserve goods or mark items sold. Comments are public, not private messages. Success is shown only after the service saves the action. Permanent deletion cannot be undone through the GUI; the backend archive is for history only.
 
-键盘操作：Tab 移动焦点；登录框 Enter 提交；搜索框 Enter 搜索。Mac `⌘1 / ⌘2 / ⌘3 / ⌘4 / ⌘N` 分别打开首页、我的商品、账号设置、互动中心和发布页；其他桌面系统对应 Ctrl。
+Tab moves focus. Enter submits sign-in and search forms. On macOS, Command+1/2/3/4/N opens Browse, My listings, Account, Community and List an item. Other desktop systems use Control.
 
-## 2026-11-04 场景插画与细节交互更新
+## English presentation and compatibility
 
-- 购买意向路线标记按 1 → 2 → 3 跳跃循环；操作记录保持钟面固定，让时针和分针逐格转动。两处均可暂停，遵循“减少动效”，页面关闭后清理动画任务；只作装饰，不更新业务状态或显示真实时间。
-- 新增原创分层插画：书桌灯、校园名片、发布相框、闲置架、心愿板、留言便笺、交接路线图和记录手账。按页面使用不同的短暂悬停位移；登录可点击开关台灯。
-- 首页增加带图片的生活场景分类入口；发布页增加三项拍照自检；账号增加可展开的名片说明。
-- 收藏增加“只看在售”；留言增加实时字数反馈；意向增加三项交接自检；记录可按内容查找。筛选不删除记录，自检只保留在当前页，不写入业务数据或交易进度。
-- 商品图片支持 100% / 200% / 300% 缩放、滚动查看、复位与 Escape 关闭，保留图片缺失时的说明。
-- `assets/scenes/` 是可直接使用的 PNG。`tools/build_scene_art.py` 为可选的插画生成源，需要 Pillow；**正常运行前端不需要安装 Pillow**。
-- 浏览器设计稿同步了对应插画和互动，并额外提供收藏剪贴簿卡片、商品预览尺寸切换、留言便笺背景等网页布局。网页与 Tkinter 的布局依各自平台适配，网页数据仍为模拟数据。
-- 最新 49 项前端测试通过；路线与时钟在网页上核对了播放、暂停及减少动效。macOS 桌面实看范围与待核对部分详见 `TEST_REPORT.md`。
+Page text, validation, service error feedback, demo content, code comments and this module's documentation are English. `localization.py` translates the existing category/status wire values at the frontend boundary. Saving and filtering send the current team enums (`books`, `electronics`, `clothing`, `household`; `on_sale` and `off_sale` for statuses). Legacy display labels are recognized, but this update does not migrate old data or change service interfaces. User-written titles, descriptions, names and comments are preserved in their original language. Existing activity action labels are translated for display without rewriting records.
 
-## 2026-11-04 次级页面与登录体验更新
+Categories shown to the user are Books, Electronics, Clothing and Home & Living. Password and display-name validation still follow the team contract, including support for Chinese characters in user-entered names. Known service errors receive specific English messages; unexpected non-English errors receive a general English recovery message without exposing raw data.
 
-- 登录 / 注册：蓝色校园插画拼贴、统一卡片布局、显示/隐藏密码、字段错误提示；独立演示可一键填入虚构账号。提交后清空密码并恢复遮挡。
-- 账号：校园名片横幅、真实商品/收藏/意向数量快捷入口、输入昵称实时预览、减少动效开关。
-- 发布：图文横幅、商品名称及价格实时预览、四项信息准备度、追加式描述提示词；保留保存前验证。
-- 商品管理与附加页面：对应主题插画、内容分区、公开留言气泡和常用提问、购买意向说明、操作时间线。
-- 商品详情：图片可放大查看；缺失或损坏的图片仍显示占位，不补造商品图片。
-- 动画采用短暂悬停过渡；销毁页面时取消动画任务。所有操作继续使用原有前端服务适配，不修改队友模块。
-- 网页设计稿同步更新 B 版；网页仍使用模拟数据，与正式 Tkinter 的数据和会话相互独立。
+## Visuals and interactions
 
-## 3. 设计与结构
+- Login illustration with a lamp switch; password reveal/hide and a demo credential button.
+- Account profile preview, live item/saved/enquiry counts and a reduced-motion setting.
+- Listing form with a live card preview, field readiness, append-only description prompts and a photo checklist.
+- Saved-item availability filter, comment character count, handover checklist and activity search.
+- Enquiry route marker cycles through 1, 2 and 3. The activity clock moves its hands in steps. Both are decorative, can be paused and respect reduced motion. They do not represent a transaction state or the actual time.
+- Animation callbacks stop when the page is closed. Other artwork uses brief hover motion.
+- Photo preview supports 100%, 200% and 300% zoom, scroll, reset and Escape to close. Missing photos show a placeholder.
+- Checklists are local reminders. They do not save business data or notify another user.
+
+Original layered illustrations are in `assets/scenes/`. The optional generator, `tools/build_scene_art.py`, requires Pillow and its configured font. Running the frontend uses the PNG files and does not require Pillow.
+
+## Code map
 
 ```text
-main.py --gui （组内现有入口，无改动）
-    ↓
-gui_gao.main() → app.py / 页面 / widgets.py
-    ↓
-gateway.py → user_service / item_service 的公开方法
-    └→ feature_gateway.py → feature_du 四个服务（前端局部存储兼容）
-    ↓
-组内既有后端 → JSON
+main.py --gui (existing team entry point)
+  -> gui_gao.main() -> app.py, pages, widgets.py
+  -> gateway.py / localization.py -> public user and item services
+  -> feature_gateway.py -> four feature_du services via a private compatibility loader
+  -> existing backend storage
 ```
 
-- `app.py`：窗口、导航、未保存提醒、后台任务、统一错误反馈。
-- `gateway.py`：服务返回格式适配、当前安全用户快照。正常业务代码不直接打开 JSON。
-- `login_page.py`、`home_page.py`、`item_page.py`、`publish_page.py`、`account_page.py`：核心页面。
-- `interaction_page.py`：收藏、留言、购买意向、个人记录页面；复用 `MessagePanel`。
-- `feature_gateway.py`：互动接口与存储兼容、身份过滤、商品状态及重复意向保护。
-- `widgets.py`、`theme.py`：输入框、提示、滚动、图片和统一样式。
-- `page_design.py`：次级页面横幅、统计快捷入口和登录插画，包含短暂悬停动效及清理。
-- `validation.py`：即时字段提示；后端仍是最终校验和权限判断方。
-- `demo.py`：通过服务接口创建独立的虚构演示数据。
-- `tests/`：本模块补充的界面和集成检查；没有替代或修改 `tests_zhao/` 的小组分工。
+`app.py` manages navigation, serial background service calls and error feedback. `page_design.py`, `theme.py` and `widgets.py` contain shared presentation. `validation.py` gives immediate feedback; final permissions and validation remain with the backend. `demo.py` creates fictional data through service calls. `gui_gao/tests/` contains Gao's supplementary checks and does not replace another member's group tests.
 
-设计参考：借鉴[闲鱼](https://www.goofish.com/)的搜索和分类商品列表、[Carousell HK](https://www.carousell.com.hk/)的图片与发布流程、[eBay Seller Hub](https://www.ebay.com/sellercenter/selling/how-to-sell/seller-hub)的商品管理信息组织。界面、代码和插画是本项目的具体实现，没有复制上述站点的源码、标识或图片。
+The layout draws on search/category patterns from Xianyu, image-led listings from Carousell HK and seller-management organisation from eBay Seller Hub. Site source code, logos and photos were not copied.
 
-## 4. 出错时的行为
+## Errors, storage and integration limits
 
-- 服务读写在一个工作线程串行执行，Tk 主线程继续响应。处理期间禁用提交与导航，防止连点产生重复发布。
-- 成功返回后才切换页面、更新状态；服务报错保留商品表单。密码提交后清空输入框，不记录密码。
-- 权限由后端再次确认。前端操作使用已登录用户 ID，不提供可填写的卖家 ID。
-- 损坏数据文件会显示错误，不把读取失败当成“空数据库”，不自动重置数据。
-- 新选择的无效图片不能提交，可改选或移除。编辑已有商品时，失效图片路径会保留，避免自动丢失旧数据。
-- 本地原生图片支持 PNG/GIF；若环境已有 Pillow，则可以增强 JPEG 预览。Pillow 不是必需依赖。单图超过 20 MB 或 2500 万像素不预览；路径由后端保存，移动原图后会显示“图片无法预览”。
-- 价格按后端规则保留两位小数。即时校验额外防止极小正数舍入为 0 后被保存。分类、名称、描述长度和上限与契约对应。
+Service calls run serially on a worker thread, keeping Tk responsive. Submission and navigation are disabled while a request runs to prevent duplicate actions. Failed item saves retain the form. Submitted passwords are cleared and never included in activity records.
 
-## 5. 附加功能接入与边界
+The frontend uses the signed-in user's ID and does not accept a user-supplied seller ID. Corrupt data produces an error; it is not silently treated as an empty database or reset. An invalid newly selected image must be replaced or removed. An existing inaccessible image path is retained when editing, avoiding unrequested data loss.
 
-互动页面已经接到根目录 `feature_du/` 的真实服务。现有服务使用不存在的 `JsonStore` 名称和 `.lock/.read()/.write()` 方法，因此 `feature_gateway.py` 在**前端私有模块加载时**适配这些名称到后端 `JsonArrayStore` 的锁和 load/save 方法。未修改队友源文件，也没有全局替换 `sys.modules`；业务写入仍由队友的方法执行。具体约定见 `HANDOFF.md`。
+Native image previews support PNG/GIF; JPEG can be supported when Pillow is already installed. Images over 20 MB or 25 million pixels are not previewed. Photos remain at their local paths, so carry them with the project when demonstrating it. The currency remains the team's existing ¥ symbol; this update does not change price units. Names are limited to 20 characters and descriptions to 200. Prices follow backend rounding, with a frontend check against rounding tiny values to zero.
 
-收藏、留言、意向、日志分别保存到所选数据目录的 `favorites.json`、`messages.json`、`intentions.json`、`system_logs.json`；正式目录的四个文件已纳入 `.gitignore`。正式数据重开仍在，独立演示关闭后清理。
+`feature_gateway.py` loads the actual additional-service source with module-local bindings to the gateway's user/item services and a `JsonArrayStore` facade. This keeps demo and practice validation in their selected data directories without changing global service defaults. It also normalizes the current favorite-toggle result for the UI. No teammate source or global modules are patched. See [HANDOFF.md](HANDOFF.md) for the remaining integration boundaries.
 
-- 商品下架或删除后，阻止新留言、新收藏和购买意向，保留历史查看和取消收藏。
-- 留言列表包含自己发布的商品讨论和自己参与过的讨论（含已删除商品）；商品留言是公开的。现有服务缺少“个人讨论列表”方法，适配层通过服务自带存储读取候选商品 ID，再调用公开留言方法。队友增加该接口后可移除这一兼容步骤。
-- 当前意向服务只有创建和读取能力，状态为 `pending`。界面没有虚构接受、拒绝、取消、付款或成交操作。
-- 操作日志只显示当前用户记录，不写入密码或留言正文。日志保存失败不回滚已经成功的业务操作，界面提示不要重复提交。
-- 界面过滤不等于独立安全边界：这是共享本地 JSON 的单机应用，不提供网络服务授权、云端同步、跨进程写入锁、图片服务器或在线支付。
-- Windows/Linux 真实桌面尚未实测。
+Saved items, comments, enquiries and logs use the selected directory's `favorites.json`, `messages.json`, `intentions.json` and `system_logs.json`. Production records persist; demo records are temporary. The current team service blocks all favorite toggles for off-sale/deleted items. Their saved history remains visible, with no Unsave action. An off-sale item can be unsaved after its seller relists it. Comments and enquiry history remain readable; new interactions require an available item. The current enquiry service supports only creation and reading of `pending` records. No accept/reject/cancel/payment actions are invented.
 
-## 6. 测试与小组交接
+Activity logs show only the current user and exclude passwords and comment text. If logging fails after an action succeeds, the UI reports that the action was saved and warns against submitting it twice. This is a single-machine JSON application, not a network-authorised service. Cross-device sync, cross-process transactions, image hosting and online payments are outside its scope. Windows/Linux native desktop behaviour has not been verified.
+
+## Checks and delivery
 
 ```sh
 python3 -m unittest discover -s gui_gao/tests -v
 python3 main.py --check
 ```
 
-第一条使用临时数据执行前端和后端连接测试，其中 Tk 测试需要图形桌面；没有桌面的环境会跳过 Tk 测试，不能把跳过当成通过。第二条执行队友现有的 19 项后端自检。实际结果见 `TEST_REPORT.md`。
+Frontend tests use temporary data. Tk tests require a graphical desktop; a skipped test does not establish a pass. The second command is the team's existing backend check. Current and historical evidence is separated in [TEST_REPORT.md](TEST_REPORT.md).
 
-**完整 `gui_gao/` 文件夹** 位于仓库根目录；本次 B 版交付包含四类附加页面、真实服务适配、集成测试及交接记录。现有入口已经支持 `from gui_gao import main`，不需要改 `main.py`。后续请按实际变更，仅暂存前端目录及对应说明文档，并先查看差异，不使用 `git add .`。根 [README](../README.md) 和 [操作指南](../GitHub%20仓库操作指南) 已同步前端信息，后续联调事项见 `HANDOFF.md`。
+Deliver the whole `gui_gao/` folder at the repository root. The existing entry point already imports it. Stage only owned files after reviewing the diff; do not use blanket staging. Update only Gao's corresponding notes in the shared README and repository guide. Teammates' code is excluded from this delivery. Verify the remote branch after pushing; a local commit alone is not an upload.
 
-这是一份前端模块交付；不等于整组项目已经达到最终提交状态。整体项目仍需要队友确认兼容层约定、小组测试、报告、演示视频及个人说明等最终核对。
+The frontend is one part of the group submission. Final group testing, demonstration files, slides and individual reports need their own checks; see [REQUIREMENTS_CHECK.md](REQUIREMENTS_CHECK.md).
 
-## 7. AI 使用说明
+<a id="7-ai-&#20351;&#29992;&#35828;&#26126;"></a>
 
-本前端的设计方案、初版代码、插画绘制、测试和交接文档由 Codex 协助生成、执行和检查；功能范围及视觉方向由 Gao 确认。尚未经过 Gao 逐行独立重写或小组成员完整复核。请在个人报告和小组 AI 使用说明中如实披露，不把生成代码全部描述为独立手写。需要按实际后续修改补充个人贡献和学习过程。
+## AI use
+
+Codex assisted with design proposals, initial code, illustration generation, testing, documentation and the English conversion. Gao selected the functional scope and visual direction. The code has not been independently rewritten line by line by Gao or fully reviewed by the group. Describe AI assistance and subsequent personal contributions accurately in the individual report and group disclosure.

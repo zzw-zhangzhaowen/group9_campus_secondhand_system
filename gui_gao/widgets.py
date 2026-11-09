@@ -122,7 +122,7 @@ class ItemImage(tk.Canvas):
         super().__init__(parent, width=width, height=height, bg=t.BG,
                          highlightthickness=0, bd=0)
         self.photo = None
-        self.reason = "暂无图片"
+        self.reason = "No image"
         try:
             source = image_path(path)
             if source:
@@ -145,7 +145,7 @@ class ItemImage(tk.Canvas):
                         self.photo = ImageTk.PhotoImage(original, master=self)
                 self.reason = ""
         except (OSError, ValueError, tk.TclError, RuntimeError):
-            self.reason = "图片无法预览"
+            self.reason = "Preview unavailable"
         self.bind("<Configure>", self.draw)
         self.draw()
 
@@ -173,7 +173,7 @@ def page_title(parent, title, subtitle=""):
         t.label(parent, subtitle, color=t.MUTED).pack(anchor="w", pady=(8, 20))
 
 
-def empty_state(parent, title, message, command, button_text="重新加载"):
+def empty_state(parent, title, message, command, button_text="Reload"):
     box = ttk.Frame(parent, padding=35)
     box.pack(fill="both", expand=True, pady=30)
     t.label(box, title, size=19, bold=True, anchor="center").pack(pady=12)
@@ -189,16 +189,16 @@ class MarketHero(tk.Frame):
         copy.pack(side='left', fill='both', expand=True, padx=28, pady=22)
         t.label(copy, 'THE CAMPUS MARKET IS OPEN.', size=10, bold=True,
                 color=t.LIME, bg=t.BLUE).pack(anchor='w')
-        t.label(copy, '逛逛校园，\n发现你的下一件好物。', size=25, bold=True,
+        t.label(copy, 'Browse campus.\nFind your next item.', size=25, bold=True,
                 color=t.WHITE, bg=t.BLUE, justify='left').pack(anchor='w', pady=(8, 5))
-        t.label(copy, '书本、数码、日常小物，都能在这里再出发。', size=11,
+        t.label(copy, 'Books, tech and everyday essentials, ready to use again.', size=11,
                 color='#DFE8FF', bg=t.BLUE).pack(anchor='w')
-        t.button(copy, '让我的闲置出发  →', lambda: app.show('publish'), 'accent').pack(anchor='w', pady=(12, 0))
+        t.button(copy, 'List an item  →', lambda: app.show('publish'), 'accent').pack(anchor='w', pady=(12, 0))
         self.art = tk.Canvas(self, width=290, height=215, bg=t.BLUE, highlightthickness=0)
         self.art.pack(side='right', padx=(0, 22))
         self.photos = []
         # Decorative illustrations, with no fabricated price or product availability.
-        for x, y, name, caption in [(12, 32, 'keyboard', '把书桌布置成喜欢的样子'), (139, 66, 'bag', '装下新一天的小日常')]:
+        for x, y, name, caption in [(12, 32, 'keyboard', 'Make room on your desk'), (139, 66, 'bag', 'Carry what you need')]:
             self.art.create_rectangle(x, y, x+137, y+137, fill=t.WHITE, outline=t.WHITE, tags='paper')
             pic = tk.PhotoImage(master=self, file=str(Path(__file__).parent / 'assets' / f'{name}.png'))
             scale = max(1, math.ceil(max(pic.width()/122, pic.height()/96)))

@@ -1,68 +1,70 @@
-# B 版前端与小组作业要求核对
+# Frontend requirements review
 
-核对日期：2026-11-04。范围：当前本地仓库、B 版 Tkinter 实现、测试、公开接口与交接说明。以下保留上传前的审查快照，文中“尚未推送”指核对时状态；后续 GitHub 上传以包含本文件的提交记录为准。没有提交 Moodle 或联系队友。
+This is the English edition of the review made on 4 November 2026. It preserves that review's evidence and limits; it is not a new check of Moodle, deadlines or the group's submission status. The language update on 10 November is described in `README.md`, `HANDOFF.md` and `TEST_REPORT.md`.
 
-**结论：Gao 的前端已经覆盖所核对小组方案的六类功能，可交给队友联调。整组最终交付尚未齐全，不能据此判断现在可以提交，也不能保证评分。**
+At the time of the review, Gao's frontend covered the six functional areas in the available group plan and was ready for integration review. This did not establish that the whole group project was ready to submit or guarantee a grade.
 
-## 依据与时效
+## Sources and dates
 
-1. 当前本地 `INT6181 Group Project Requirements_v2.pdf`，第 1–3 页：正式评分和提交要求。旧版第 3 页写 Group Report，新版改为 Individual Report；本次以 v2 为准。
-2. 用户此前提供的 `group9_python group project(2).docx`，整体方案第 1–8 节。原文件位于微信临时目录，目前已经不存在；本次从先前读取该文件时保存的原文结果恢复核对，**不能证明小组之后没有改版**。功能和分工再与当前仓库 README、GitHub 仓库操作指南、contracts 两份契约交叉检查。
-3. 当前 GitHub main 和本地 HEAD 同为 `1971a062fbd5abffbeef1fdea740162e42126185`；B 版修改仍在工作区，远端没有本次更新。
-4. 未重新读取 Moodle 当前公告、截止日期、提案状态、互评状态或已交文件；这些不在本次确认范围。
+1. The locally available `INT6181 Group Project Requirements_v2.pdf`, pages 1–3. Version 2 specified an Individual Report; the earlier version had specified a Group Report. The review used version 2.
+2. The previously supplied `group9_python group project(2).docx`, sections 1–8. Its WeChat temporary file was no longer available on 4 November, so the review used the text previously extracted from it and cross-checked the local README, repository guide and contracts. A subsequent revision of the group plan could not be ruled out.
+3. The 4 November review used local and remote main at `1971a062fbd5abffbeef1fdea740162e42126185`, with the B-design changes then still local. Later delivery must be checked against the relevant commit, not inferred from this snapshot.
+4. The review did not recheck current Moodle announcements, deadlines, proposal status, peer review or uploaded files. Those historical findings must not be treated as current submission status.
 
-## 小组方案逐项核对
+## Group plan
 
-| 方案要求 | 实现与证据 | 结论 |
+| Requirement | Implementation and evidence | Review finding |
 |---|---|---|
-| Python、Tkinter、JSON、unittest | `main.py --gui`；核心服务与附加服务写 JSON；`gui_gao/tests/` | 符合技术路线 |
-| 注册、登录、昵称修改；普通用户、不做管理员 | login/account 页面，安全会话及后端公开用户接口 | 已实现 |
-| 商品新增、查看、修改、删除 | publish/detail/mine 页面；下架、恢复、永久删除确认；核心服务负责权限 | 已实现 |
-| 名称、分类、价格、描述、本地图片路径 | 发布表单与校验；PNG/GIF 原生预览，已有 Pillow 时增强 JPEG | 已实现 |
-| 书籍/电子产品/服饰/生活用品分类及关键词搜索 | 首页组合筛选、价格排序、分页、空态 | 已实现 |
-| 收藏、我的收藏、取消收藏 | 详情按钮与独立收藏页；重开保留，删除商品仍可取消 | 已实现并连接真实服务 |
-| 商品留言、查看全部留言 | 详情 MessagePanel、相关讨论列表、提交反馈、500 字限制与草稿确认 | 已实现并连接真实服务 |
-| 提交购买意向、记录清单；无真实交易 | 详情“我想要”，发出/收到列表；禁止自己/重复/非在售提交 | 已实现并连接真实服务 |
-| 登录、发布等关键操作日志 | 当前用户记录页，最新在前；密码和留言正文不进入日志 | 已实现并连接真实服务 |
-| 各页面绑定后端函数 | gateway 调核心服务；feature_gateway 调队友四类服务 | 通过兼容层联通，接口约定待负责人确认 |
-| Gao 仅负责 GUI，保留队友代码 | 代码修改位于 gui_gao；同步本人文档和 .gitignore；队友目录 diff 为空 | 符合修改范围 |
-| 并行开发后合并、联调、系统测试 | 42 项前端补充及 19 项核心自检通过；本次尚未推送 | 本地验证完成，仍处小组第 3 阶段联调 |
+| Python, Tkinter, JSON and unittest | Existing `main.py --gui`, service storage, `gui_gao/tests/` | Matches the agreed approach |
+| Registration, sign-in and display-name changes; ordinary users only | Login and account pages call public user services | Implemented; no administrator role added |
+| Create, view, edit and delete items | Listing, detail and own-item pages; off-sale/relist controls and deletion confirmation | Implemented; service enforces ownership |
+| Name, category, price, description and local image path | Validated form; native PNG/GIF preview and optional Pillow JPEG support | Implemented |
+| Four categories and keyword search | Combined filters, sorting, pagination and empty states | Implemented |
+| Save, view and unsave items | Detail control and separate saved-item page; unsave remains possible after deletion | Connected to the actual service |
+| Post and read item comments | Detail composer and relevant-thread list; 500-character limit and draft warning | Connected to the actual service |
+| Enquiries and records, without transactions | Send, sent/received lists; duplicate, self and unavailable-item guards | Connected to the actual service |
+| Key-action activity log | Current user's records, newest first; passwords and comment bodies excluded | Connected to the actual service |
+| Bind pages to existing functions | Core gateway and private additional-service adapter | Working through the adapter; interface alignment still needs the owners' review |
+| Gao owns the GUI | Implementation and supplementary tests in `gui_gao/` | Teammate source unchanged |
+| Merge, integrate and test | 42 frontend tests and 19 backend checks passed in that review | Local evidence only; not complete group acceptance |
 
-小组方案明确“只做信息展示与意向登记”。因此没有支付、物流、管理员或完整订单状态流程，不是该方案的功能遗漏。
+The plan described information display and expressions of interest. Payment, delivery, reservations, administrators and a full order lifecycle were outside that plan. The 10 November delivery follows the latest upstream English category/status enums; it does not rewrite user content or migrate stored records. The latest favorite service blocks unsaving unavailable items, so the historical table above no longer describes that behavior. Current behavior and integration limits are in `HANDOFF.md`.
 
-## 老师评分要求核对
+## Teacher requirements recorded on 4 November
 
-| 正式要求 | 当前证据 | 状态 |
+| Requirement | Evidence then available | Qualification |
 |---|---|---|
-| 原创性与实用性 10% | 校园闲置信息流转场景，示例及操作可演示 | 有实现；尚未核实是否与其他组重复，报告需解释用途 |
-| 可用性 10%：运行、易用、错误处理、响应 | 实际 Mac GUI；后台执行服务调用；输入校验、失败重试、禁重复提交、草稿/删除提醒 | 本机已验证；不能外推到所有环境或永不崩溃 |
-| 技术深度 55%：输入输出、计算、模块化 | 用户/商品/附加服务与页面分离；持久化、筛选、排序、价格校验 | 已体现 |
-| Good：规格说明及测试 | 后端 contracts、前端 README/HANDOFF；42 项前端补充测试 + 19 项自检 | 有证据；附加接口正式契约和整组测试交接仍需补 |
-| Excellent：文档及代码审查 | 使用说明、交接、检查记录和本次审查 | 有本次记录；需小组理解/复核，不能保证 Excellent |
-| AI 加分项 | AI 协助规格、测试、文档与审查，前端 README 已说明 | 可据实写入报告；CI/CD 属加分方向，并非强制条件 |
-| 15 分钟展示视频与代表性真实演示 | 可演示程序已具备 | 当前仓库未见最终视频，未核实其他存放处 |
-| 课堂 5 分钟技术讲解，最多 5 张精选页；互评及答问 | 可从接口、测试、错误处理等提取 | 当前仓库未见最终课件；互评状态未核实 |
-| 每人至少 600 words 的个人报告，PDF | 前端 AI 使用/贡献说明可作素材 | 当前仓库未见 Gao 最终个人报告；不能由共用 README 代替 |
+| Originality and usefulness, 10% | Working campus second-hand scenario | Explain its purpose; similarity to other groups was not checked |
+| Usability, 10% | Native Mac GUI, background service calls, input feedback, retry and draft/deletion prompts | One-machine evidence, not a guarantee across environments |
+| Technical depth, 55% | Modular services/pages, persistence, filters, sorting and numeric validation | Explain the actual implementation |
+| Good level: specifications and tests | Contracts, frontend README/handoff, 42 frontend tests and 19 backend checks | Additional-service contract and group-wide testing handoff still needed |
+| Excellent level: documentation and code review | Usage notes, handoff and review records | Requires group understanding and review; no grade guarantee |
+| AI-related bonus | AI assistance with specifications, tests, documentation and review disclosed | Report actual use; CI/CD was an enhancement direction rather than mandatory in this review |
+| 15-minute demonstration video with representative live use | Demonstrable application | Final video was not found in the reviewed repository; other locations were not checked |
+| Five-minute classroom technical explanation with at most five selected slides; peer review and questions | Interfaces, tests and error handling could provide material | Final slides and peer-review status were not verified |
+| Individual PDF report of at least 600 words per member | Contribution and AI-use notes available | A shared README does not replace the individual report |
 
-## 最终提交仍需完成/核实
+## Group delivery checklist from that review
 
-| 项目 | 当前状态 / 下一步 | 负责人 |
+These are coordination items, not a claim that the files are still missing today.
+
+| Material or action | Preparation | Owner |
 |---|---|---|
-| `main.py`、README、代码和测试 | 已存在；本次更新需按目录审阅后提交推送 | Gao 与组内整合者 |
-| 附加服务接口统一 | GUI 私有加载兼容正常；原始 feature_du 直接导入仍有 JsonStore/read/write 不一致 | DU YI 与后端负责人 |
-| 整组测试 | 当前有前端补充测试和后端自检；仓库尚无约定的 tests_zhao 目录 | ZHAO XIAOJUN |
-| 最终演示电脑 | 用正式交付副本验证依赖、图片、启动、关键流程；Mac .app 曾重复打开报错，README 推荐命令或 .command | 全组 |
-| `group9_project.zip` | 尚未生成本次完整最终包；应包含代码、测试、README、可复现的虚构示例数据；排除真实账号/运行数据/缓存 | 整合者 |
-| `group9_presentation.pptx`、展示视频、课堂精选页 | 当前仓库未见最终版；需与文档负责人确认 | HUANG BAIQI 与全组 |
-| 每人个人报告 PDF | 每位成员各自撰写贡献、挑战、学习与反思，至少 600 words；引用外部资源并如实说明 AI 使用 | 每位成员 |
-| Moodle 提案、成员资料、截止时间、上传与互评 | 未核实实时状态，需提交前查看 Moodle | 小组联络人/每位成员 |
+| Source, entry point, tests and README | Review and integrate each member's changes deliberately | Members and integrator |
+| Additional-service interface | Align storage methods and agree a personal-thread query | DU YI and backend owner |
+| Group tests | Combine supplementary GUI checks with the agreed group suite | ZHAO XIAOJUN |
+| Final demonstration machine | Verify dependencies, images, startup and representative flows there | Whole group |
+| `group9_project.zip` | Code, tests, README and reproducible fictional examples; exclude real accounts, runtime records and caches | Integrator |
+| `group9_presentation.pptx`, video and classroom slides | Match actual functions and select technical points for the short presentation | HUANG BAIQI and whole group |
+| Each member's report PDF | At least 600 words on contribution, challenges, learning and reflection; cite resources and disclose AI assistance | Each member |
+| Moodle details and final upload | Recheck proposal/member details, current deadlines, destinations and submission state | Group contact and each member |
 
-## 本次代码审查记录
+## Findings retained from the original code review
 
-- 已修复：固定高度导致首页行动按钮被裁切，改为按内容确定高度，并加入最小窗口尺寸回归断言。
-- 已修复：只扫描当前在售商品会漏掉没有收藏/意向关联的删除商品讨论；通过服务存储读取候选商品编号，使用公开方法加载历史讨论，测试覆盖参与者与无关用户。
-- 已验证：同一商品重复意向被拦截；日志写入失败不重复已成功业务；损坏 JSON 不被覆盖；收藏/日志只展示当前用户；未登录操作被拒绝。
-- 需协调而未擅改：附加模块命名不一致用前端局部兼容，详见 HANDOFF。原始 feature_du 直接导入问题仍存在；当前的“已接通”仅指经此前端入口调用。
-- 边界：本地 JSON 的单机项目，没有网络服务授权或跨进程事务保障；这与当前方案一致，但不应宣传为已上线的交易平台。
+- A fixed-height home banner had clipped action buttons. Content-based sizing and minimum-window assertions fixed it.
+- Scanning only available items missed discussions on deleted items without other links. Candidate IDs are now obtained through the service's store; public message methods then load threads. Participant and unrelated-user cases are tested.
+- Duplicate enquiries are rejected. A logging failure does not repeat a completed business action. Corrupt JSON is preserved. Saved items and logs are scoped to the signed-in user.
+- The additional services' storage-name mismatch is handled within Gao's adapter, without editing their source. Standalone imports still need their owners' attention; see `HANDOFF.md`.
+- This is a single-machine JSON application, without network authorisation or cross-process transaction guarantees.
 
-验证记录：macOS / Python 3.12.14 / Tk 9.0.4；42 项测试通过、无跳过；19 项后端自检通过；`git diff --check` 无空白错误。测试和演示均使用隔离虚构数据。
+Historical environment: macOS, Python 3.12.14 and Tk 9.0.4. That review passed 42 frontend tests, 19 backend checks and the whitespace check, using isolated fictional data. See `TEST_REPORT.md` for later results rather than reusing those counts as current evidence.

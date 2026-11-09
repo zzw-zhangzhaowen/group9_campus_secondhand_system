@@ -19,11 +19,11 @@ class CampusApp:
         self.closed = False
         self.page = None
         self.route = "login"
-        self.keyword, self.category, self.sort = "", "", "最新发布"
+        self.keyword, self.category, self.sort = "", "", "Newest"
         self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="campus-service")
         self.status = tk.StringVar()
         t.setup(root)
-        root.title("校园二手 · 活力市集 B · Group 9" + (" · 独立演示" if demo else ""))
+        root.title("Campus Market · Design B · Group 9" + (" · Demo" if demo else ""))
         root.geometry("1180x820")
         root.minsize(1000, 700)
         root.protocol("WM_DELETE_WINDOW", self.close)
@@ -37,7 +37,7 @@ class CampusApp:
         self.footer.pack(fill="x")
         self.status_label = t.label(self.footer, textvariable=self.status, size=10, color=t.MUTED)
         self.status_label.pack(side="left", fill="x", expand=True)
-        t.label(self.footer, "独立演示 · 关闭后清空演示数据" if demo else "校园闲置，好物再用 · 不提供线上支付",
+        t.label(self.footer, "Demo · Temporary data is cleared on exit" if demo else "Campus Market · No online payments",
                 size=10, color=t.MUTED).pack(side="right")
         # Bind once to the toplevel; do not accumulate bind_all callbacks per page.
         root.bind("<MouseWheel>", self.wheel, add="+")
@@ -55,7 +55,7 @@ class CampusApp:
 
     def callback_error(self, exc_type, exc, tb):
         # Never echo exception values that might contain a password or file data.
-        self.notify("界面遇到异常，请返回列表后重试。", error=True)
+        self.notify("Something went wrong. Return to Browse and try again.", error=True)
 
     def notify(self, message, error=False):
         self.status.set(message)
@@ -87,7 +87,7 @@ class CampusApp:
         if self.busy or self.closed:
             return False
         self.busy = True
-        self.notify("正在处理，请稍候…")
+        self.notify("Working, please wait…")
         self.root.configure(cursor="watch")
         disabled = []
 
@@ -122,12 +122,12 @@ class CampusApp:
             try:
                 result = future.result()
             except Exception as exc:
-                message = str(exc) if isinstance(exc, UserError) else "操作未完成，请重试或检查数据文件权限。"
+                message = str(exc) if isinstance(exc, UserError) else "Could not complete the action. Try again or check file permissions."
                 self.notify(message, error=True)
                 if failure:
                     failure(message)
             else:
-                self.notify("已更新")
+                self.notify("Updated")
                 success(result)
                 if self.gateway.warning:
                     self.notify(self.gateway.warning, error=True)
@@ -139,7 +139,7 @@ class CampusApp:
         if self.busy:
             return False
         if self.page and hasattr(self.page, "is_dirty") and self.page.is_dirty():
-            return messagebox.askyesno("放弃未保存的修改？", "当前内容还没有保存。确定离开此页面？",
+            return messagebox.askyesno("Discard unsaved changes?", "Your changes have not been saved. Leave this page?",
                                        parent=self.root, default="no")
         return True
 
@@ -170,11 +170,11 @@ class CampusApp:
             child.destroy()
         top = ttk.Frame(self.header)
         top.pack(fill="x", pady=(0, 15))
-        t.button(top, "⇄  校园二手", lambda: self.show("home"), "nav").pack(side="left")
+        t.button(top, "⇄  Campus Market", lambda: self.show("home"), "nav").pack(side="left")
         if not self.gateway.user or self.route in ("login", "register"):
-            t.label(top, "让闲置在校园继续发光", color=t.MUTED).pack(side="right")
+            t.label(top, "Buy and sell within your campus", color=t.MUTED).pack(side="right")
             return
-        t.button(top, "+ 发布闲置", lambda: self.show("publish"), "accent").pack(side="right", padx=(18,0))
+        t.button(top, "+ List an item", lambda: self.show("publish"), "accent").pack(side="right", padx=(18,0))
         t.label(top, self.gateway.user["nickname"], bold=True, color=t.BLUE).pack(side="right", padx=16)
         searchbox = ttk.Frame(top)
         searchbox.pack(side="left", fill="x", expand=True, padx=30)
@@ -182,13 +182,13 @@ class CampusApp:
         self.search.insert(0, self.keyword)
         self.search.pack(side="left", fill="x", expand=True)
         self.search.bind("<Return>", lambda e: self.search_now())
-        t.button(searchbox, "搜索", self.search_now, "primary").pack(side="left", padx=(6,0))
+        t.button(searchbox, "Search", self.search_now, "primary").pack(side="left", padx=(6,0))
         nav = ttk.Frame(self.header)
         nav.pack(fill="x", pady=(0,10))
-        for route, name in [("home", "逛校园"), ("interactions", "互动中心"), ("mine", "我的商品"), ("account", "账号设置")]:
+        for route, name in [("home", "Browse"), ("interactions", "Community"), ("mine", "My listings"), ("account", "Account")]:
             selected = self.route == route or (route == "home" and self.route == "detail")
             t.button(nav, name, lambda r=route: self.show(r), "selected" if selected else "nav").pack(side="left", padx=(0,8))
-        t.button(nav, "退出登录", self.logout, "nav").pack(side="right")
+        t.button(nav, "Sign out", self.logout, "nav").pack(side="right")
 
     def search_now(self):
         if self.can_leave():
@@ -198,13 +198,13 @@ class CampusApp:
     def logout(self):
         if self.can_leave():
             self.gateway.logout()
-            self.keyword, self.category, self.sort = "", "", "最新发布"
+            self.keyword, self.category, self.sort = "", "", "Newest"
             self.show("login", force=True)
-            self.notify("已退出登录")
+            self.notify("You have signed out")
 
     def close(self):
         if self.busy:
-            self.notify("当前操作正在完成，请稍后关闭窗口。", error=True)
+            self.notify("Please wait for the current action to finish before closing.", error=True)
             return
         if not self.can_leave():
             return

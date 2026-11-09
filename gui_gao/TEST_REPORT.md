@@ -1,111 +1,93 @@
-# 前端检查记录
+# Frontend verification record
 
-## 2026-11-04 · 路线跳跃与时钟指针（最新本地版）
+## 10 November 2026 — English frontend update
 
-- `python3.12 -m unittest discover -s gui_gao/tests -q`：**49 项通过，0 跳过，13.043 秒**；`node --check b-scenes.js` 通过。
-- 新增 Tk 检查：路线三个停留位置及跳跃方向、钟面中心固定且指针按步进转动、暂停取消定时任务、恢复播放、减少动效禁用播放、页面销毁后任务清理。
-- 网页实际核对：路线位置依序变化，时钟指针角度变化；暂停前后位置/角度保持一致；开启减少动效后动画为 `none` 且播放按钮禁用。当前页面未发现浏览器控制台错误。
-- 桌面代码已同步，自动测试实际创建并渲染对应 Tk 页面。本轮桌面人工预览停在收藏页，未完成路线与时钟的原生视觉核对；不把网页验证当作桌面视觉验收。
-- 本次 GitHub 交付范围为 `gui_gao/`，以及根 README、GitHub 仓库操作指南中属于 Gao 前端的目录、功能与验证说明。独立网页设计稿留在本地，未更改队友源文件，也不上传业务 JSON、缓存和旧 `.app`。远端交付状态以包含本记录的提交为准。
+Delivery scope: `gui_gao/` and only Gao's notes in the shared README and repository guide. The separate web prototype remains local. Initial English checks used `b603d99`; pre-upload integration used upstream `7ef1a95`. Verify the containing commit on the remote branch for delivery status.
 
-## 2026-11-04 · 分区插画与互动丰富（上一轮）
+### Pre-upload integration with latest upstream
 
-- 本轮基线：`82a58cebd0ef42b2365fbbe6794cea2caa8e7236`。本机 macOS / Python 3.12.14 / Tk 9.0.4。
-- `python3.12 -m unittest discover -s gui_gao/tests -q`：**48 项通过，0 跳过，8.966 秒**。
-- 新增覆盖：台灯开关；拍照清单不使表单变脏、不创建商品；收藏及记录筛选不删除原始记录；插画动画在页面销毁时清理；图片缩放上下限、复位和关闭。
-- 原生桌面实看：新插画登录页、虚构账号登录成功、带生活场景入口的首页、带心愿板插画及筛选入口的收藏页。桌面与网页分别按平台布局，没有把网页截图当成 Tkinter 截图。
-- 浏览器实际操作：点灯；收藏在售筛选；记录搜索；发布紧凑预览和清单计数；意向自检计数；留言草稿字数与清空；图片放大至 300%、上限禁用、复位和关闭；账号帮助展开。
-- 浏览器排版：1366px 桌面视口核对首页、发布、收藏、意向；390px 窄屏核对账号和留言，页面无横向溢出。保存截图在独立设计稿目录 `preview-updates/`。
-- JS 语法检查通过：`b-scenes.js`、`b-pages.js`、`b-auth.js`。网页仅是模拟数据原型。
-- 本轮只改 `gui_gao/` 及独立设计稿；`backend_zhang/`、`feature_du/`、`contracts/`、`main.py`、`tests_zhao/` 和 `docs_huang/` 无变更。未重新跑后端自检；下方 19 项是历史结果。
-- 本轮尚未提交或推送 GitHub。未验证 Windows/Linux 真机；不代表整组最终验收。
+The team changed its category/status enums and additional-service interfaces after the initial English checks. The first run against `7ef1a95` reported 3 failures and 29 errors across 53 tests. The fixes are confined to Gao's frontend: current English wire mappings, gateway-local service context, normalized favorite results and read-only unavailable saved history. Tests now follow the current service restriction on unsaving off-sale/deleted items.
 
-## 2026-11-04 · 次级页面与登录优化（上一轮）
+Final result: **55 tests passed in 7.604 seconds, with no skipped tests**. Two added regressions verify that isolated feature validation never calls default production services and that independent directories with matching IDs remain separate. No teammate source was edited. The earlier 53-test result below is the pre-sync baseline, not the final upload result.
 
-- 基线：`aa444880ef55249eec057d17821a41a00aa8271f`；本机 macOS / Python 3.12.14 / Tk 9.0.4。
-- `python3.12 -m unittest discover -s gui_gao/tests -q`：**45 项通过，0 跳过**，7.641 秒。
-- 新增三项界面回归：发布实时预览与追加提示词/留言草稿；账号计数/名片预览/动效开关与销毁清理；登录密码显示/失败清空并恢复遮挡/注册确认密码显示/最小窗口宽度。
-- 原生桌面实看：新版登录、登录后账号、发布和收藏页面；用虚构演示账号实际登录成功，导航正常。
-- 网页设计稿：B 版账号、发布、商品详情、收藏/留言/意向/记录和登录/注册已经更新。已检查发布、常用提问、昵称保存、动效开关、登录必填提示/密码显示/演示账号登录、注册密码不一致提示及成功后登录；账号与登录在 390px 视口下无页面横向溢出。
-- 网页是模拟数据预览，正式 Tkinter 保留实际服务调用。本轮没有重新执行根 `main.py --check`，下方 19 项结果属于此前记录。
-- 上传范围：`gui_gao/` 的前端、测试和说明，以及根 README / 仓库操作指南中本次前端段落；队友源文件无差异。页面原位更新；重复且曾报错的旧 `.app` 启动器退出版本管理，保留 `.command` 和 Python 入口。上传状态以包含本记录的 GitHub 提交为准。
-- 未验证 Windows/Linux 真机；此记录是前端局部检查，不是整组最终提交验收。
+### Automated desktop checks
 
-以下保留历史检查记录。
-
-## 2026-11-04 · B 版与附加页面
-
-- 基线：`1971a062fbd5abffbeef1fdea740162e42126185`；本机 macOS / Python 3.12.14 / Tk 9.0.4。
-- `python3 -m unittest discover -s gui_gao/tests -v`：**42 项通过，0 跳过**，4.916 秒；18 项核心服务/校验、12 项附加功能集成、12 项 Tk 检查。
-- `python3 main.py --check`：原有 **19 项后端自检通过**，使用临时数据。
-- 新增覆盖：收藏跨会话保存、用户隔离、删除后历史、留言草稿/校验、双方意向查询、重复/自己/下架商品拦截、双提交竞争、损坏文件保留、日志不写密码与正文、日志失败不重复业务操作。
-- Tk 检查覆盖实际详情页收藏/留言/意向操作、四类附加页面、1000×700 最小布局、首页按钮完整显示、离开未保存草稿。
-- 原生桌面实看：B 版首页、收藏、商品留言、购买意向和操作记录页面已显示；首页行动按钮完整可见，记录页显示当前用户登录及互动记录。原网页仍是设计比较稿。
-- `git diff -- backend_zhang feature_du contracts main.py` 为空，队友源文件未变。
-- 此为上传前的本地实现验证，不是整组提交验收。跨平台、多进程及最终演示电脑尚未验证；兼容层待负责人确认。逐项核对见 `REQUIREMENTS_CHECK.md`。
-
-以下为历史记录，状态以本节为准。
-
-## 2026-11-03 提交前复查
-
-- 已刷新远端 `main`，基线仍为 `82a3a1d5d15187fa075222ea15d7a52386b845b6`，没有上游文件冲突。
-- 初次复查在连续创建/销毁 Tk 窗口时出现异常退出。故障堆栈显示，后台服务线程的垃圾回收触发了旧 Tk 变量析构。现已在主线程销毁控件时显式释放变量和图片，退出前等待服务线程结束；测试也在主线程清理已关闭窗口的引用循环。
-- 新增回归检查：多次切换登录/注册页，再在工作线程触发回收，确认 Tk 变量全部在主线程释放。
-- 修正后完整测试：`python3 -X faulthandler -m unittest discover -s gui_gao/tests -v`，**29 项通过，无跳过**（18 项服务/校验，11 项 Tk 检查；本次运行 3.301 秒）。
-- 原有 `python3 main.py`：**19 项后端自检通过**。
-- README 已说明可选 `.app` 启动器重复打开的已知问题；推荐命令行或 `启动演示.command`。这次窗口清理修正不代表 `.app` 提示已被定位或解决。
-- 下面保留 11 月 1 日的原始记录，便于区分初次验证与本次提交前复查。
-
-## 2026-11-01 初次验证
-
-日期：2026-11-01。环境：Gao 的 macOS Apple Silicon，Python 3.12.14，Tk 9.0.4；未安装 Pillow 的运行环境。
-
-后端基线：`82a3a1d5d15187fa075222ea15d7a52386b845b6`。本地工作分支：`frontend/gao-core-ui`。只新增 `gui_gao/`，没有修改队友文件。
-
-## 自动检查
-
-执行：
+Environment: macOS on Apple Silicon, Python 3.12.14 with Tk. Run from the repository root:
 
 ```sh
-/Users/gao/.local/bin/python3.12 -m unittest discover -s gui_gao/tests -q
+python3.12 -m unittest discover -s gui_gao/tests -v
 ```
 
-最终输出：
+Result: **53 tests passed in 11.494 seconds, with no skipped tests**. After adding two legacy account-action labels, the four localization tests were run again and passed in 0.092 seconds.
 
-```text
-Ran 28 tests in 3.631s
-OK
-```
+Coverage includes:
 
-无跳过。包含 18 项服务适配/输入校验检查和 10 项实际 Tk 窗口控件检查。使用临时目录和虚构数据，不写正式数据。
+- Authentication, account updates, safe session fields and input validation.
+- Listing creation, editing, ownership restrictions, off-sale/relist actions and deletion.
+- Search, category filters, sorting, stale records and storage failures.
+- Saved items, comments, enquiries and activity logs, including user isolation and duplicate-action protection.
+- Real Tk windows, navigation, form recovery, image fallbacks and the 1000 × 700 minimum layout.
+- Route movement through positions 1, 2 and 3; stepped clock hands; pause/resume, reduced motion and callback cleanup when pages close.
+- English display labels with the original backend category and status values preserved.
+- English handling of known backend errors and historical activity labels. User-written titles, descriptions, names and comments remain unchanged.
 
-| 范围 | 核对内容 |
-|---|---|
-| 会话 | 正确/错误登录、失败后清理旧会话、安全用户字段、重复注册、退出后拒绝操作 |
-| 商品与权限 | 创建后重新读取、编辑、外部注入卖家 ID 被忽略、他人编辑/下架/上架/删除被拒绝 |
-| 状态 | 下架与重新上架、永久删除、过期详情、非卖家不能查看下架商品 |
-| 浏览 | 搜索、分类、价格排序、卖家昵称更新 |
-| 账号 | 昵称修改、错误旧密码被拒绝、修改后重新登录 |
-| 边界 | 字段长度、非数值/无穷/负数/过大价格、舍入为零的小数、异常返回格式 |
-| 数据失败 | 损坏 JSON 显示失败且内容未被覆盖，失败更新不改变原商品 |
-| Tk 流程 | 注册、登录失败再成功、发布错误提示、有效提交、重复点击防护、编辑、各页面切换、退出 |
-| Tk 恢复 | 未保存表单取消离开保留内容、工作线程异常后解锁表单且隐藏异常中的敏感值 |
-| 图片 | 无图、丢失/损坏图片占位、原生 PNG 预览 |
-| 窗口尺寸 | 1000×700 下首页/个人商品/账号/发布/详情的主体所需宽度不超出画布 |
+The tests use isolated temporary data and do not write to the group's production data files.
 
-另外执行组内原有 `python3 main.py`：**19 项后端自检全部通过**。这项自检使用后端自身的临时数据目录。
+### Web prototype checks
 
-## 桌面人工核对
+The separate prototype uses sample data. It is not evidence of browser-to-backend integration.
 
-通过真实 Mac 窗口打开演示启动入口，检查登录、首页、发布页、我的商品和账号设置的实际外观。首页有八件示例商品，正常显示四列卡片与图片；我的商品只显示 Gao 演示账号的三件商品。检查了 `⌘N`、`⌘2`、`⌘3` 导航，并返回首页。发布与账号页面可纵向滚动查看下方表单。
+- Syntax checks passed for `app.js`, `b-pages.js`, `b-auth.js` and `b-scenes.js`.
+- Eleven routes were checked at both 1366 × 1000 and 390 × 844: home, my listings, account, publish, item details, saved items, comments, enquiries, activity log, sign-in and registration.
+- These checks found no horizontal page overflow, broken images, remaining Chinese interface text or JavaScript page errors. The design overview and its four new English thumbnails were also checked.
+- Eleven interaction groups passed: category filtering; search; saving/unsaving and sending an enquiry; comments; sent/received enquiry tabs; publishing and off-sale/relist actions; display-name editing; sign-in validation, password visibility and demo sign-in; route animation controls; clock animation controls; and system reduced-motion handling.
+- English labels required extra room on narrow screens. Navigation now wraps, and the four community tabs use a two-column layout. The final 390 px enquiry page was visually inspected.
 
-小窗口检查曾发现首页初次加载沿用四列导致宽度过大，已改为渲染时按当前宽度选择三列或四列；最终 28 项检查在修改后重新通过。键盘数字快捷键已明确按键事件类型，避免与鼠标按钮事件混淆。
+### Native visual inspection and scope
 
-## 交付与未覆盖范围
+The English sign-in, account and publishing pages were inspected in the native Mac app. The route and clock animations are covered by automated Tk checks; this update does not claim a separate native visual inspection of those two animations. Their browser equivalents were checked independently.
 
-- 新增内容只在 `gui_gao/`，工作区其他受版本管理的文件与基线一致。
-- 前端压缩包排除缓存、正式 JSON、临时演示数据及密钥。文件名及解压后字节一致性另行检查。
-- 未测试 Windows/Linux 的真实桌面；无显示器环境跳过的 Tk 检查不能算作通过。
-- 没有将收藏、留言、意向或日志标记为接通；其现有接口兼容问题见 `HANDOFF.md`。
-- 未做多进程共同写入、跨设备同步、联网交易或支付测试；这些不属于当前单机前端实现。
-- 通过这些检查不能证明程序没有任何缺陷，也不等于整组期末项目已可提交。小组仍需合并、联调和演示复核。
+Before syncing upstream, all 28 files outside `gui_gao/` in the initial snapshot were unchanged. The upload then incorporated the team's 11 upstream commits by fast-forward. Relative to `7ef1a95`, this delivery changes only `gui_gao/` and Gao's notes in the shared README and repository guide. Teammates' source and contracts have no changes from that upstream version. The standalone prototype is stored separately.
+
+The backend's own self-checks were not rerun for this language update. The 19-test backend results below are historical. Windows/Linux native rendering, multi-process writes and the final group demonstration environment have not been verified by this update.
+
+## Earlier checks
+
+These records describe earlier versions. They do not establish the current GitHub upload or assignment-submission status.
+
+| Date and change | Frontend result | Backend self-checks in that run |
+| --- | --- | --- |
+| 4 November — route and clock animations | 49 passed, 0 skipped, 13.043 s | Not rerun |
+| 4 November — section illustrations and interactions | 48 passed, 0 skipped, 8.966 s | Not rerun |
+| 4 November — secondary pages and authentication | 45 passed, 0 skipped, 7.641 s | Not rerun |
+| 4 November — B design and additional pages | 42 passed, 0 skipped, 4.916 s | 19 passed using temporary data |
+| 3 November — window cleanup regression | 29 passed, 0 skipped, 3.301 s | 19 passed |
+| 1 November — initial frontend | 28 passed, 0 skipped, 3.631 s | 19 passed using temporary data |
+
+### 4 November — animation controls
+
+The checks covered route stopping positions and direction, a fixed clock centre, stepped hand rotation, cancellation of scheduled work while paused, resume behavior, reduced motion and page-destruction cleanup. Browser positions and angles changed during playback and remained stable while paused. Reduced motion disabled animation and playback controls. Native Tk pages were created by the tests, but the manual desktop preview in that run stopped at saved items; it did not visually verify the two desktop animations.
+
+### 4 November — illustrations and page interactions
+
+The illustrations update checked the lamp toggle, non-destructive photo checklists, saved-item and activity filters, image zoom limits and cleanup of illustration animations. Native sign-in, home and saved-item pages were inspected. Browser checks covered the lamp, filters, activity search, listing preview, checklists, comment counter/reset, zoom up to 300%, reset/close and account-help expansion.
+
+The preceding secondary-page update added checks for live listing previews, comment drafts, account summaries and motion preferences, password visibility, failed-sign-in recovery and minimum-window layout. Native sign-in, account, publishing and saved-item pages were inspected. Browser checks also exercised registration validation and demo sign-in.
+
+### 4 November — B design and additional pages
+
+The 42 frontend checks comprised 18 core service/validation checks, 12 additional-feature integration checks and 12 Tk checks. They covered saved items across sessions, user isolation, deleted-item history, comment validation, both sides of enquiries, duplicate/self/off-sale enquiry rejection, competing submissions, damaged-file preservation and safe logging. Tk checks exercised the four community pages, details-page actions, narrow-window layout and leaving an unsaved draft. The actual Mac app displayed the B home page and all four community pages.
+
+### 3 November — window cleanup
+
+Repeated Tk window creation and destruction initially caused an abnormal exit: garbage collection in a background service thread triggered disposal of old Tk variables. The fix explicitly released variables and images on the main thread during widget destruction and waited for service workers before exit. A regression check repeatedly switched sign-in/registration views and triggered collection from a worker. The complete suite then passed.
+
+That fix did not diagnose or resolve the old optional `.app` launcher's reopening warning. The supported launch paths are the Python entry point and the command launcher.
+
+### 1 November — initial frontend
+
+The initial environment was macOS Apple Silicon, Python 3.12.14 and Tk 9.0.4 without Pillow. The 28 checks comprised 18 service/validation checks and 10 real Tk window checks. They covered registration and sign-in recovery, safe session fields, listing permissions, search/category/sort behavior, account updates, price and field boundaries, corrupt JSON preservation, form recovery, missing-image fallbacks and minimum-window widths.
+
+Native inspection covered sign-in, home, publishing, my listings and account settings. The demo showed eight sample listings, including three owned by the sample Gao account. Keyboard navigation and vertical form scrolling were checked. A narrow-window issue was corrected by choosing three or four card columns when rendering; keyboard number shortcuts were also separated from mouse events.
+
+At that initial stage, the additional community features were not yet connected. The later 4 November integration results supersede that historical limitation. Frontend checks remain separate from the group's final integration, presentation and submission review.

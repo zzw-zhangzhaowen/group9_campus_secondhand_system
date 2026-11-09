@@ -41,6 +41,7 @@ campus-secondhand/
 │   ├── __main__.py           # 独立演示 / 独立数据目录入口
 │   ├── app.py                # 窗口、导航、后台任务、错误反馈
 │   ├── gateway.py            # 调用后端公开服务接口
+│   ├── localization.py       # English labels and current backend enum mapping
 │   ├── feature_gateway.py    # 附加服务的前端局部兼容
 │   ├── interaction_page.py   # 收藏 / 留言 / 意向 / 个人日志
 │   ├── login_page.py
@@ -54,6 +55,7 @@ campus-secondhand/
 │   ├── assets/scenes/       # 各页面原创分层插画 PNG
 │   ├── tools/              # 可选插画生成工具（运行前端不需要）
 │   ├── tests/               # 前端补充测试，不替代 tests_zhao
+│   ├── launch_demo.command   # macOS isolated demo launcher
 │   └── README.md / HANDOFF.md / TEST_REPORT.md
 ├── test_zhao/                    # 整组单元测试与测试文档模块（ZHAO XIAOJUN）
 │   ├──__init__.py
@@ -96,7 +98,7 @@ python3 -m gui_gao --data-dir ./my_practice_data
 
 正式模式没有预设账号，请先注册。独立前端演示账号为 `gao_demo`，密码为 `Campus123`；其他演示用户和商品也都是虚构数据。前端演示使用系统临时目录，与后端的 `main.py --demo` 分开；自选练习目录会保留数据，请勿提交其 JSON 文件。
 
-Mac 可双击 `gui_gao/启动演示.command`。旧的可选 `.app` 启动器因重复打开曾报错且功能重复，已从版本管理移除；保留命令行与 `.command` 两种入口，均需要本机 Python/Tkinter。JPEG 预览可由环境中已有的 Pillow 增强，但 Pillow 不是必需依赖。详情见前端 README。
+Mac: open `gui_gao/launch_demo.command`; the historical `gui_gao/启动演示.command` remains a compatibility shortcut. 旧的可选 `.app` 启动器因重复打开曾报错且功能重复，已从版本管理移除；保留命令行与 `.command` 两种入口，均需要本机 Python/Tkinter。JPEG 预览可由环境中已有的 Pillow 增强，但 Pillow 不是必需依赖。详情见前端 README。
 
 首次调用任何接口时，`backend_zhang/data/` 下的 `users.json`、`items.json`、`items_deleted.json`
 会自动创建为空数组 `[]`，`items_meta.json` 自动创建为 `{"next_item_id": 1}`。
@@ -157,16 +159,16 @@ if record["deleted"]:
 - **意向 (Intentions)**：管理買家購買意向的提交與狀態。
 - **日誌 (Logs)**：記錄系統核心操作足跡。
 
-当前上述代码位于根目录 `feature_du/`。前端 `feature_gateway.py` 在私有模块加载时，将原代码使用的 `JsonStore`、`.lock/.read()/.write()` 适配到核心 JSON 存储，未修改队友源文件或全局模块。四个独立页面与详情页操作已接通并保存数据；接口限制及后续统一方式见 [HANDOFF](gui_gao/HANDOFF.md)。
+Frontend integration with root `feature_du/` uses Gao's module-local service bindings and storage facade. This preserves isolated demo/practice data without changing teammate source or global defaults. The four Community pages call the real services. Current restrictions and remaining coordination are recorded in [HANDOFF](gui_gao/HANDOFF.md).
 
-### 图形界面（gui_gao，GAO JINGYAN 负责）
+### Frontend (gui_gao — GAO JINGYAN)
 
-- 已接通：登录注册、分类/关键词搜索、价格排序、分页、商品详情、发布编辑、个人商品下架/上架/删除、昵称与密码修改，以及收藏、公开商品留言、发出/收到的购买意向、个人操作记录。
-- 2026-11-04 界面优化：登录/注册插画、密码显示切换和演示账号填入；账号名片与真实数量入口；发布实时预览、内容提示；商品图片放大及四类互动页的横幅、留言气泡、时间线。支持减少动效，页面退出时清理动画任务。
-- 本轮补充：各板块原创插画、首页场景入口、台灯开关、拍照及交接自检、收藏在售筛选、记录搜索、留言字数反馈、图片缩放/复位；购买意向标记按 1 → 2 → 3 跳跃，操作记录的时钟指针逐格转动。循环插画可暂停，并遵循减少动效设置；自检和动画不改变交易状态。PNG 已随前端提交，可选生成工具需要 Pillow，正常运行不新增依赖。
-- 正常业务经 `gateway.py` 调用后端公开服务，遵守 `success/message/data` 返回格式；不直接读写业务 JSON。权限、搜索及状态修改以服务层为准。
-- 服务读写在后台线程执行，处理期间防止重复提交；错误反馈、未保存提醒、删除确认及图片占位均由界面提供。
-- 商品只使用既有“在售 / 已下架”状态；删除历史以只读占位展示。意向服务目前只有创建/查询能力，没有接受、取消、付款或标记成交功能。
+- English pages, validation, error messages, demo content, code comments and module documentation. Updated on 10 November 2026 against upstream `7ef1a95`.
+- Connected: registration/sign-in, category/keyword search, price sorting, pagination, item details, publishing/editing, own-item off-sale/relist/delete actions, display-name/password updates, saved items, public comments, sent/received enquiries and personal activity.
+- Design B retains illustrated sections, sign-in password visibility, profile summaries, live listing previews, image zoom, filters, checklists and comment counts. The enquiry marker moves through 1 → 2 → 3; clock hands move in steps. Animations can be paused, respect reduced motion and clean up when pages close.
+- Display labels map to current backend enums: `books`, `electronics`, `clothing`, `household`, `on_sale` and `off_sale`. User-written content and stored data are not rewritten.
+- The frontend binds feature validation to the selected gateway data directory and normalizes the latest favorite result. Off-sale/deleted saved items remain visible as read-only history; the current service does not allow unsaving them. Enquiries support creation/query, without payment, acceptance, cancellation or sold-state actions.
+- Core mutations and permissions stay with public backend services. Work runs off the Tk UI thread with duplicate-submit protection, errors, draft warnings and deletion confirmation. The local browser prototype is a separate sample-data design preview and is not part of this repository delivery.
 
 ## 5. 数据安全要点
 
@@ -199,7 +201,7 @@ python3 -m unittest discover -s gui_gao/tests -v
 python3 main.py
 ```
 
-2026-11-04 插画、交互与路线/时钟动画验证：macOS、Python 3.12.14、Tk 9.0.4 下，49 项前端补充测试全部通过且无跳过，覆盖暂停、减少动效和页面销毁后的任务清理。网页已实看路线/时钟播放及暂停；这两处桌面动画的人工视觉核对尚待完成。19 项原有后端自检是此前 B 版交付的通过记录，本次仅做前端更新，未重复执行该自检。记录见 [TEST_REPORT](gui_gao/TEST_REPORT.md)，逐项要求核对见 [REQUIREMENTS_CHECK](gui_gao/REQUIREMENTS_CHECK.md)。没有图形桌面时 Tk 测试会跳过，不能计为通过；Windows/Linux 真实桌面尚未验证。前端设计、实现及测试使用 Codex 协助，具体贡献与 AI 使用范围见[前端说明](gui_gao/README.md#7-ai-使用说明)。
+Frontend check on 10 November 2026: **55 tests passed, no skips, 7.604 seconds**, using Python 3.12.14 and real Tk windows on macOS. Checks include current enum mapping, feature-service data isolation, favorite return values, UI flows, animation controls and cleanup. Native Windows/Linux rendering and the final group demonstration machine remain unverified. The 19 backend self-check passes are historical; that suite was not rerun for this update. See [TEST_REPORT](gui_gao/TEST_REPORT.md), [requirements review](gui_gao/REQUIREMENTS_CHECK.md) and [AI-use disclosure](gui_gao/README.md#ai-use).
 
 后端已为测试提供全部必要条件：
 

@@ -22,7 +22,7 @@ class TkFlowTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="group9-ui-widgets-")
         self.gateway = Gateway.isolated(self.temp.name)
-        self.gateway.register("student_a", "Campus123", "小高")
+        self.gateway.register("student_a", "Campus123", "Gao")
         try:
             self.root = tk.Tk()
         except tk.TclError as exc:
@@ -102,7 +102,7 @@ class TkFlowTests(unittest.TestCase):
         self.app.show("register")
         self.wait()
         page = self.app.page
-        for key, value in dict(username="new_user", nickname="新同学", password="Campus456", confirm="Campus456").items():
+        for key, value in dict(username="new_user", nickname="NewStudent", password="Campus456", confirm="Campus456").items():
             page.fields[key].set(value)
         page.submit()
         self.wait()
@@ -117,7 +117,7 @@ class TkFlowTests(unittest.TestCase):
         page = self.app.page
         page.submit()
         self.assertTrue(page.fields["name"].error.cget("text"))
-        for key,value in dict(name="测试教材", price="35", description="九成新，少量笔记。", category="书籍").items():
+        for key,value in dict(name="Test textbook", price="35", description="Good condition, with a few notes.", category="Books").items():
             page.fields[key].set(value)
         page.submit()
         # Duplicate click is ignored while in flight.
@@ -137,11 +137,11 @@ class TkFlowTests(unittest.TestCase):
         self.login()
         self.app.show("publish")
         self.wait()
-        self.app.page.fields["name"].set("未完成的商品")
+        self.app.page.fields["name"].set("Unfinished item")
         with patch("gui_gao.app.messagebox.askyesno", return_value=False):
             self.app.show("home")
         self.assertEqual(self.app.route, "publish")
-        self.assertEqual(self.app.page.fields["name"].get(), "未完成的商品")
+        self.assertEqual(self.app.page.fields["name"].get(), "Unfinished item")
         with patch("gui_gao.app.messagebox.askyesno", return_value=True):
             self.app.show("home")
         self.wait()
@@ -162,10 +162,10 @@ class TkFlowTests(unittest.TestCase):
         self.login()
         self.app.show("account")
         self.wait()
-        self.app.page.nickname.set("高同学")
+        self.app.page.nickname.set("GaoStudent")
         self.app.page.save_nickname()
         self.wait()
-        self.assertEqual(self.gateway.user["nickname"], "高同学")
+        self.assertEqual(self.gateway.user["nickname"], "GaoStudent")
         for key,value in dict(old="Campus123", new="Nextpass123", confirm="Nextpass123").items():
             self.app.page.fields[key].set(value)
         self.app.page.save_password()
@@ -203,9 +203,9 @@ class TkFlowTests(unittest.TestCase):
 
     def test_interactions_submit_and_navigation(self):
         self.login()
-        self.gateway.register("other_user", "Campus123", "其他同学")
+        self.gateway.register("other_user", "Campus123", "OtherStudent")
         self.gateway.login("other_user", "Campus123")
-        item = self.gateway.save_item(dict(name="键盘", category="电子产品", price="88", description="蓝牙正常", image_path=""))
+        item = self.gateway.save_item(dict(name="Keyboard", category="Electronics", price="88", description="Bluetooth works", image_path=""))
         self.gateway.login("student_a", "Campus123")
         self.app.show("detail", item_id=item['id'])
         self.wait()
@@ -213,7 +213,7 @@ class TkFlowTests(unittest.TestCase):
         page.favorite()
         self.wait()
         self.assertTrue(page.favorited)
-        page.messages_panel.composer.set("请问还在吗？")
+        page.messages_panel.composer.set("Is it still available?")
         with patch("gui_gao.app.messagebox.askyesno", return_value=False):
             self.app.show("home")
         self.assertEqual(self.app.route, "detail")
@@ -252,26 +252,26 @@ class TkFlowTests(unittest.TestCase):
         self.app.show('publish')
         self.wait()
         page = self.app.page
-        page.fields['name'].set('台灯')
+        page.fields['name'].set('Lamp')
         page.fields['price'].set('25')
-        page.fields['description'].set('原有内容')
-        page.add_prompt('附带配件：')
+        page.fields['description'].set('Existing text')
+        page.add_prompt('Accessories: ')
         self.root.update()
-        self.assertEqual(page.fields['description'].get(), '原有内容\n附带配件：')
-        self.assertEqual(page.live_name.cget('text'), '台灯')
+        self.assertEqual(page.fields['description'].get(), 'Existing text\nAccessories: ')
+        self.assertEqual(page.live_name.cget('text'), 'Lamp')
         self.assertEqual(page.live_price.cget('text'), '¥ 25')
         self.assertEqual(float(page.progress['value']), 4)
-        page.fields['description'].set('字' * 198)
-        page.add_prompt('附带配件：')
+        page.fields['description'].set('x' * 198)
+        page.add_prompt('Accessories: ')
         self.assertEqual(len(page.fields['description'].get()), 198)
         self.assertTrue(page.fields['description'].error.cget('text'))
-        page.fields['description'].set('一盏台灯')
+        page.fields['description'].set('A reading lamp')
         page.submit()
         self.wait()
         panel = self.app.page.messages_panel
-        panel.composer.set('原问题')
-        panel.add_prompt('配件是否齐全？')
-        self.assertEqual(panel.composer.get(), '原问题\n配件是否齐全？')
+        panel.composer.set('Original question')
+        panel.add_prompt('Are all accessories included?')
+        self.assertEqual(panel.composer.get(), 'Original question\nAre all accessories included?')
         panel.composer.set('')
 
     def test_account_counts_motion_and_banner_cleanup(self):
@@ -280,8 +280,8 @@ class TkFlowTests(unittest.TestCase):
         self.wait()
         page = self.app.page
         self.assertEqual([w.cget('text') for w in page.stats.values], ['00','00','00'])
-        page.nickname.set('新昵称')
-        self.assertEqual(page.name_preview.cget('text'), '新昵称')
+        page.nickname.set('NewName')
+        self.assertEqual(page.name_preview.cget('text'), 'NewName')
         page.nickname.set(page.original_nickname)
         page.toggle_motion()
         page.banner.animate(-5)
@@ -304,7 +304,7 @@ class TkFlowTests(unittest.TestCase):
         for v in page.photo_check.values:
             v.set(True)
         page.photo_check.update_count()
-        self.assertEqual(page.photo_check.summary.cget('text'), '3 / 3 已确认')
+        self.assertEqual(page.photo_check.summary.cget('text'), '3 / 3 checked')
         self.assertFalse(page.is_dirty())
         self.assertEqual(self.gateway.mine(), [])
 
@@ -350,7 +350,7 @@ class TkFlowTests(unittest.TestCase):
         self.app.show('interactions', kind='favorites')
         self.wait()
         page = self.app.page
-        page.loaded([{'id': 999, 'name':'下架的物品', 'price':10, 'status':'已下架',
+        page.loaded([{'id': 999, 'name':'Inactive item', 'price':10, 'status':'Off sale',
                       'seller_id':self.gateway.user_id(), 'image_path':''}])
         page.available.set(True)
         page.filter_favorites()
@@ -360,11 +360,11 @@ class TkFlowTests(unittest.TestCase):
         self.app.show('interactions', kind='logs')
         self.wait()
         page = self.app.page
-        page.loaded([{'action_type':'收藏', 'detail':'测试物品', 'timestamp':'示例'}])
-        page.log_query.set('不匹配')
+        page.loaded([{'action_type':'Save item', 'detail':'Test item', 'timestamp':'Example'}])
+        page.log_query.set('no-match')
         page.render()
         self.assertEqual(len(page.records), 1)
-        page.log_query.set('收藏')
+        page.log_query.set('Save item')
         page.render()
         self.app.show('account')
         self.wait()
@@ -375,8 +375,8 @@ class TkFlowTests(unittest.TestCase):
     def test_image_zoom_limits_reset_and_close(self):
         self.login()
         asset = Path(__file__).resolve().parents[1]/'assets'/'book.png'
-        item = self.gateway.save_item(dict(name='图书', category='书籍', price='30',
-                                          description='图片缩放检查', image_path=str(asset)))
+        item = self.gateway.save_item(dict(name='Book', category='Books', price='30',
+                                          description='Image zoom check', image_path=str(asset)))
         self.app.show('detail', item_id=item['id'])
         self.wait()
         self.app.page.zoom_image()
@@ -390,14 +390,14 @@ class TkFlowTests(unittest.TestCase):
                    if w.winfo_class() in ('TButton', 'Button')}
         canvas = next(w for w in window.winfo_children() if isinstance(w, tk.Canvas))
         initial_width = canvas.photo.width()
-        self.assertTrue(buttons['− 缩小'].instate(['disabled']))
-        buttons['＋ 放大'].invoke()
-        buttons['＋ 放大'].invoke()
+        self.assertTrue(buttons['− Zoom out'].instate(['disabled']))
+        buttons['＋ Zoom in'].invoke()
+        buttons['＋ Zoom in'].invoke()
         self.assertEqual(canvas.photo.width(), initial_width * 3)
-        self.assertTrue(buttons['＋ 放大'].instate(['disabled']))
-        buttons['复位'].invoke()
+        self.assertTrue(buttons['＋ Zoom in'].instate(['disabled']))
+        buttons['Reset'].invoke()
         self.assertEqual(canvas.photo.width(), initial_width)
-        buttons['关闭预览'].invoke()
+        buttons['Close preview'].invoke()
         self.root.update()
         self.assertFalse(window.winfo_exists())
 
@@ -411,8 +411,8 @@ class TkFlowTests(unittest.TestCase):
 
     def test_minimum_window_layout(self):
         self.login()
-        item = self.gateway.save_item(dict(name="测试教材", category="书籍", price="35",
-                                           description="商品描述", image_path=""))
+        item = self.gateway.save_item(dict(name="Test textbook", category="Books", price="35",
+                                           description="Description", image_path=""))
         self.root.geometry("1000x700")
         self.root.deiconify()
         for route in ["home", "mine", "account", "publish", "detail"]:

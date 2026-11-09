@@ -6,17 +6,21 @@ demo sessions use the documented service constructors; neither changes defaults.
 from __future__ import annotations
 
 from pathlib import Path
+from .localization import category_to_wire, present_item, error_text
 
 
 class UserError(Exception):
     """A safe, user-facing failure message."""
 
+    def __init__(self, message):
+        super().__init__(error_text(message))
+
 
 def unwrap(result):
     if not isinstance(result, dict) or type(result.get("success")) is not bool:
-        raise UserError("服务返回格式异常，请稍后重试。")
+        raise UserError("Unexpected service response. Please try again.")
     if not result["success"]:
-        raise UserError(str(result.get("message") or "操作未完成，请重试。"))
+        raise UserError(str(result.get("message") or "Could not complete the action. Please try again."))
     return result.get("data")
 
 
@@ -46,7 +50,7 @@ class Gateway:
             self.features.log(action, detail)
         except Exception:
             # The business operation already succeeded; do not offer a duplicate retry.
-            self.warning = "操作已保存，但操作记录暂未写入；请勿重复提交。"
+            self.warning = "Changes saved, but the activity log could not be updated. Do not submit again."
 
     @classmethod
     def isolated(cls, directory):
@@ -74,7 +78,7 @@ class Gateway:
         function = self.users.login if self.instance_mode else self.users.login_user
         user = self.safe_user(unwrap(function(username, password)))
         self.user = user
-        self.audit("登录")
+        self.audit("Sign in")
         return dict(user)
 
     def logout(self):
@@ -83,29 +87,29 @@ class Gateway:
 
     def user_id(self):
         if not self.user:
-            raise UserError("请先登录。")
+            raise UserError("Please sign in first.")
         return self.user["id"]
 
-    def browse(self, keyword="", category="", sort="最新发布"):
+    def browse(self, keyword="", category="", sort="Newest"):
         field, descending = {
-            "最新发布": ("created_at", True),
-            "价格从低到高": ("price", False),
-            "价格从高到低": ("price", True),
+            "Newest": ("created_at", True),
+            "Price: low to high": ("price", False),
+            "Price: high to low": ("price", True),
         }.get(sort, ("created_at", True))
         self.user_id()
-        return unwrap(self.items.search_items(keyword=keyword, category=category,
-                      include_removed=False, sort_by=field, descending=descending))
+        return [present_item(item) for item in unwrap(self.items.search_items(keyword=keyword, category=category_to_wire(category),
+                      include_removed=False, sort_by=field, descending=descending))]
 
     def mine(self):
-        return unwrap(self.items.get_items_by_seller(self.user_id(), include_removed=True,
-                      sort_by="created_at", descending=True))
+        return [present_item(item) for item in unwrap(self.items.get_items_by_seller(self.user_id(), include_removed=True,
+                      sort_by="created_at", descending=True))]
 
     def detail(self, item_id):
         uid = self.user_id()
-        item = unwrap(self.items.get_item_by_id(item_id, include_removed=True))
+        item = present_item(unwrap(self.items.get_item_by_id(item_id, include_removed=True)))
         # Visibility filtering is a UI rule; mutations remain backend-authorized.
-        if item["status"] != "在售" and item["seller_id"] != uid:
-            raise UserError("商品已下架，暂时无法查看。")
+        if item["status"] != "Available" and item["seller_id"] != uid:
+            raise UserError("This item is off sale and cannot be viewed.")
         return item
 
     def seller_names(self, items):
@@ -115,37 +119,38 @@ class Gateway:
             if result.get("success") and result.get("data"):
                 names[uid] = result["data"]["nickname"]
             else:
-                names[uid] = "卖家信息暂不可用"
+                names[uid] = "Seller information unavailable"
         return names
 
     def save_item(self, fields, item_id=None):
         # No caller-supplied seller ID, status, timestamps or item ID on create.
         clean = {key: fields[key] for key in
                  ("name", "category", "price", "description", "image_path")}
+        clean["category"] = category_to_wire(clean["category"])
         uid = self.user_id()
         if item_id is None:
             value = unwrap(self.items.create_item(uid, **clean))
         else:
             value = unwrap(self.items.update_item(item_id, uid, clean))
-        self.audit("发布商品" if item_id is None else "编辑商品", f"商品 #{value['id']} · {value['name']}")
-        return value
+        self.audit("List item" if item_id is None else "Edit item", f"Item #{value['id']} · {value['name']}")
+        return present_item(value)
 
     def change_item(self, action, item_id):
         methods = {"remove": self.items.remove_item, "restore": self.items.restore_item,
                    "delete": self.items.delete_item_permanently}
         if action not in methods:
-            raise UserError("不支持的商品操作。")
+            raise UserError("Unsupported item action.")
         value = unwrap(methods[action](item_id, self.user_id()))
-        self.audit({"remove": "下架商品", "restore": "重新上架", "delete": "永久删除"}[action], f"商品 #{item_id}")
-        return value
+        self.audit({"remove": "Take item off sale", "restore": "Relist", "delete": "Delete permanently"}[action], f"Item #{item_id}")
+        return present_item(value)
 
     def nickname(self, value):
         user = self.safe_user(unwrap(self.users.update_nickname(self.user_id(), value)))
         self.user = user
-        self.audit("更新昵称")
+        self.audit("Update display name")
         return dict(user)
 
     def password(self, old, new):
         value = unwrap(self.users.change_password(self.user_id(), old, new))
-        self.audit("更新密码")
+        self.audit("Update password")
         return value

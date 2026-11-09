@@ -21,18 +21,18 @@ class HomePage(ScrollPage):
             collections = ttk.Frame(self.body)
             collections.pack(fill='x', pady=(0, 25))
             for i, (category, image, title) in enumerate([
-                    ('书籍', 'book', '新学期书桌'), ('电子产品', 'keyboard', '学习好搭档'),
-                    ('生活用品', 'bag', '宿舍小日子')]):
+                    ('Books', 'book', 'Books for term'), ('Electronics', 'keyboard', 'Study essentials'),
+                    ('Home & Living', 'bag', 'Room essentials')]):
                 tile = ttk.Frame(collections, padding=12, relief='solid', borderwidth=1)
                 tile.grid(row=0, column=i, sticky='nsew', padx=(0, 12))
                 collections.columnconfigure(i, weight=1, uniform='collection')
                 ItemImage(tile, str(Path(__file__).parent/'assets'/f'{image}.png'), width=70, height=65).pack(side='right')
                 t.button(tile, title+' ↗', lambda c=category: self.filter(c), 'nav').pack(side='left')
-        page_title(self.body, "发现校园好物", "找到需要的，也让喜欢的继续。")
+        page_title(self.body, "Browse Campus Market", "Find what you need. Pass on what you no longer use.")
         filters = ttk.Frame(self.body)
         filters.pack(fill="x", pady=(8,16))
         for category in ("",) + CATEGORIES:
-            t.button(filters, category or "全部商品", lambda c=category: self.filter(c),
+            t.button(filters, category or "All items", lambda c=category: self.filter(c),
                      "selected" if category == app.category else "nav").pack(side="left", padx=(0,6))
         self.sort = ttk.Combobox(filters, values=SORTS, state="readonly", width=16)
         self.sort.set(app.sort)
@@ -40,9 +40,9 @@ class HomePage(ScrollPage):
         self.sort.bind("<<ComboboxSelected>>", self.sort_changed)
         summary = ttk.Frame(self.body)
         summary.pack(fill="x", pady=(0,15))
-        self.count = t.label(summary, "正在加载商品…", color=t.MUTED)
+        self.count = t.label(summary, "Loading items…", color=t.MUTED)
         self.count.pack(side="left")
-        t.button(summary, "刷新", self.start, "nav").pack(side="right")
+        t.button(summary, "Refresh", self.start, "nav").pack(side="right")
         self.results = ttk.Frame(self.body)
         self.results.pack(fill="both", expand=True)
         self.pagination = ttk.Frame(self.body)
@@ -74,8 +74,8 @@ class HomePage(ScrollPage):
     def failed(self, message):
         self.items = []
         self.clear()
-        self.count.configure(text="商品加载失败")
-        empty_state(self.results, "暂时无法加载", message, self.start)
+        self.count.configure(text="Could not load items")
+        empty_state(self.results, "Could not load this page", message, self.start)
 
     def filter(self, category):
         self.app.category = category
@@ -98,13 +98,13 @@ class HomePage(ScrollPage):
             self.columns = 5 if width >= 1180 else 4 if width >= 920 else 3
         self.clear()
         count = len(self.items)
-        label = f"共 {count} 件在售商品"
+        label = f"{count} available items"
         if self.app.keyword:
             label = f"“{self.app.keyword}” · {label}"
         self.count.configure(text=label)
         if not count:
-            empty_state(self.results, "还没有找到合适的好物", "换个关键词或分类试试，也可以发布你的第一件闲置。",
-                        self.reset_filters, "查看全部商品")
+            empty_state(self.results, "No matching items", "Try another search or category, or list your first item.",
+                        self.reset_filters, "Browse all items")
             return
         for column in range(5):
             self.results.columnconfigure(column, weight=1 if column < self.columns else 0, uniform="cards" if column < self.columns else "")
@@ -121,16 +121,16 @@ class HomePage(ScrollPage):
             t.label(content, item["category"], size=10, color=t.MUTED).pack(anchor="w")
             t.label(content, item["name"], size=13, bold=True, wraplength=200, justify="left").pack(anchor="w", pady=(5,8))
             t.label(content, f"¥ {item['price']:.2f}", size=22, bold=True, color=t.INK).pack(anchor="w")
-            seller = self.names.get(item["seller_id"], "校园同学")
+            seller = self.names.get(item["seller_id"], "Student")
             t.label(content, seller, size=10, color=t.MUTED).pack(anchor="w", pady=(8,8))
-            t.button(content, "查看详情", lambda i=item["id"]: self.app.show("detail", item_id=i)).pack(fill="x")
+            t.button(content, "View details", lambda i=item["id"]: self.app.show("detail", item_id=i)).pack(fill="x")
         total = (count + self.PAGE_SIZE - 1) // self.PAGE_SIZE
-        previous = t.button(self.pagination, "上一页", lambda: self.turn(-1))
+        previous = t.button(self.pagination, "Previous", lambda: self.turn(-1))
         previous.pack(side="left")
         if self.page_number == 0:
             previous.state(["disabled"])
-        t.label(self.pagination, f"第 {self.page_number+1} / {total} 页", color=t.MUTED).pack(side="left", padx=20)
-        following = t.button(self.pagination, "下一页", lambda: self.turn(1))
+        t.label(self.pagination, f"Page {self.page_number+1} / {total}", color=t.MUTED).pack(side="left", padx=20)
+        following = t.button(self.pagination, "Next", lambda: self.turn(1))
         following.pack(side="left")
         if self.page_number + 1 >= total:
             following.state(["disabled"])
@@ -157,22 +157,22 @@ class MyItemsPage(ScrollPage):
         super().__init__(parent)
         self.app = app
         self.items = []
-        self.filter_value = "全部"
-        PageBanner(self.body, app, 'MY LITTLE STORE / 我的闲置架', '让闲置继续发光。',
-                   '整理、更新、再出发。每件好物都有下一位主人。', 'keyboard').pack(fill='x', pady=(0,20))
-        self.stats = StatStrip(self.body, [('全部商品', '看看我的闲置', lambda: self.filter('全部')),
-            ('正在出售', '管理在售商品', lambda: self.filter('在售')),
-            ('暂时收起', '查看下架商品', lambda: self.filter('已下架'))])
+        self.filter_value = "All"
+        PageBanner(self.body, app, 'MY LITTLE STORE / MY LISTINGS', 'Manage your listings.',
+                   'Update details, take items off sale or list them again.', 'keyboard').pack(fill='x', pady=(0,20))
+        self.stats = StatStrip(self.body, [('All items', 'View my listings', lambda: self.filter('All')),
+            ('Available', 'Manage available items', lambda: self.filter('Available')),
+            ('Off sale', 'View inactive items', lambda: self.filter('Off sale'))])
         self.stats.pack(fill='x', pady=(0,18))
         self.tabs = ttk.Frame(self.body)
         self.tabs.pack(fill="x", pady=(5,18))
         self.tab_buttons = {}
-        for value in ["全部", "在售", "已下架"]:
-            button = t.button(self.tabs, value, lambda v=value: self.filter(v), "selected" if value == "全部" else "nav")
+        for value in ["All", "Available", "Off sale"]:
+            button = t.button(self.tabs, value, lambda v=value: self.filter(v), "selected" if value == "All" else "nav")
             button.pack(side="left", padx=(0,8))
             self.tab_buttons[value] = button
-        t.button(self.tabs, "+ 发布闲置", lambda: app.show("publish"), "primary").pack(side="right")
-        t.button(self.tabs, "刷新", self.start, "nav").pack(side="right", padx=10)
+        t.button(self.tabs, "+ List an item", lambda: app.show("publish"), "primary").pack(side="right")
+        t.button(self.tabs, "Refresh", self.start, "nav").pack(side="right", padx=10)
         self.list = ttk.Frame(self.body)
         self.list.pack(fill="both", expand=True)
 
@@ -193,18 +193,18 @@ class MyItemsPage(ScrollPage):
 
     def failed(self, message):
         self.clear()
-        empty_state(self.list, "暂时无法加载你的商品", message, self.start)
+        empty_state(self.list, "Could not load your listings", message, self.start)
 
     def render(self):
         self.clear()
-        self.stats.set_counts([len(self.items), sum(i['status']=='在售' for i in self.items), sum(i['status']=='已下架' for i in self.items)])
+        self.stats.set_counts([len(self.items), sum(i['status']=='Available' for i in self.items), sum(i['status']=='Off sale' for i in self.items)])
         for value, button in self.tab_buttons.items():
-            count = len([i for i in self.items if value == "全部" or i["status"] == value])
+            count = len([i for i in self.items if value == "All" or i["status"] == value])
             button.configure(text=f"{value}  {count}", style="Selected.TButton" if value == self.filter_value else "Nav.TButton")
-        items = [i for i in self.items if self.filter_value == "全部" or i["status"] == self.filter_value]
+        items = [i for i in self.items if self.filter_value == "All" or i["status"] == self.filter_value]
         if not items:
-            empty_state(self.list, "这里还没有商品", "发布一件闲置，让它遇见新的主人。",
-                        lambda: self.app.show("publish"), "发布闲置")
+            empty_state(self.list, "No items here yet", "List an item you no longer need.",
+                        lambda: self.app.show("publish"), "List an item")
             return
         for item in items:
             row = ttk.Frame(self.list, padding=(12,14), relief="solid", borderwidth=1)
@@ -214,23 +214,23 @@ class MyItemsPage(ScrollPage):
             info.pack(side="left", fill="x", expand=True)
             t.label(info, item["name"], size=14, bold=True).pack(anchor="w")
             t.label(info, f"{item['category']}   ·   ¥ {item['price']:.2f}", color=t.MUTED).pack(anchor="w", pady=6)
-            t.label(info, item["status"], color=t.GREEN if item["status"] == "在售" else t.MUTED, size=10).pack(anchor="w")
+            t.label(info, item["status"], color=t.GREEN if item["status"] == "Available" else t.MUTED, size=10).pack(anchor="w")
             actions = ttk.Frame(row)
             actions.pack(side="right")
-            t.button(actions, "查看", lambda i=item["id"]: self.app.show("detail", item_id=i), "nav").pack(side="left")
-            t.button(actions, "编辑", lambda i=item["id"]: self.app.show("publish", item_id=i)).pack(side="left", padx=6)
-            action = "remove" if item["status"] == "在售" else "restore"
-            t.button(actions, "下架" if action == "remove" else "重新上架",
+            t.button(actions, "View", lambda i=item["id"]: self.app.show("detail", item_id=i), "nav").pack(side="left")
+            t.button(actions, "Edit", lambda i=item["id"]: self.app.show("publish", item_id=i)).pack(side="left", padx=6)
+            action = "remove" if item["status"] == "Available" else "restore"
+            t.button(actions, "Take off sale" if action == "remove" else "Relist",
                      lambda i=item, a=action: self.change(i, a)).pack(side="left", padx=6)
-            t.button(actions, "删除", lambda i=item: self.change(i, "delete"), "danger").pack(side="left", padx=6)
+            t.button(actions, "Delete", lambda i=item: self.change(i, "delete"), "danger").pack(side="left", padx=6)
 
     def change(self, item, action):
         if self.app.busy:
             return
         if action in ("delete", "remove"):
-            verb = "永久删除" if action == "delete" else "下架"
-            consequence = "此操作无法通过前端恢复。" if action == "delete" else "下架后将从公开列表隐藏，你可以重新上架。"
-            if not messagebox.askyesno(f"{verb}商品？", f"{verb}“{item['name']}”？\n\n{consequence}",
+            verb = "Delete permanently" if action == "delete" else "Take off sale"
+            consequence = "This action cannot be undone." if action == "delete" else "The item will be hidden from Browse. You can relist it later."
+            if not messagebox.askyesno(f"{verb} item?", f"{verb} “{item['name']}”?\n\n{consequence}",
                                       parent=self.app.root, default="no"):
                 return
         def complete(_):

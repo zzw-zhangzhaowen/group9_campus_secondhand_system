@@ -1,11 +1,11 @@
-# B 版分层场景插画
+# Design B layered illustrations
 
-这些图片由本项目的 `gui_gao/tools/build_scene_art.py` 从几何形状原创绘制，没有使用第三方照片、网站截图或商标。
+These illustrations were drawn from geometric shapes by `gui_gao/tools/build_scene_art.py`. They do not use third-party photos, site screenshots or trademarks.
 
-每种场景包含 `*-base.png` 和 `*-float.png` 两个透明图层，尺寸 840 × 600。后者用于短暂悬停动效；登录场景的浮层是台灯光束，默认关闭。
+Each scene has transparent `*-base.png` and `*-float.png` layers at 840 × 600 pixels. Floating layers provide short hover motion. The login floating layer is the lamp beam, initially hidden.
 
-路线和时钟场景保留 PNG 作为原始插画素材；动态界面只读取底图，使用浏览器 SVG 或 Tk Canvas 重绘标记及钟面指针，以独立控制位置、暂停和减少动效，不旋转整张图片。
+The enquiry route and activity clock use the base PNG plus independently drawn SVG or Tk Canvas markers/hands. This allows animation, pause and reduced motion without rotating the whole illustration. They do not show transaction progress or real time.
 
-配色：群青、墨蓝、青柠、奶油白与杏色。用于界面装饰，不代表实际商品照片或交易状态。`home` 为浏览器首页场景，桌面首页保留商品图片拼贴。
+Colours are blue, navy, lime, cream and apricot. The art is decorative, not a real item photo. The browser uses the `home` scene; the desktop homepage uses a collage of item illustrations.
 
-运行程序直接读取 PNG，无新增运行依赖。需要重新生成时运行 `tools/build_scene_art.py`；生成工具依赖 Pillow 和脚本中指定的本机字体，可按开发环境调整字体路径。
+The app reads the PNGs directly. Regeneration is optional and requires Pillow and the font configured in the generator; adjust the font path to your development machine.

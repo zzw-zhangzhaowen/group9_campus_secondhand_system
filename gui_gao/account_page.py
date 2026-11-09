@@ -10,47 +10,47 @@ class AccountPage(ScrollPage):
     def __init__(self, parent, app):
         super().__init__(parent)
         self.app = app
-        self.banner = PageBanner(self.body, app, 'MY CAMPUS CARD / 我的校园名片',
-            f"你好，{app.gateway.user['nickname']}。", '好物与日常，都在这里。让同学认出你，也照顾好账号安全。', 'account')
+        self.banner = PageBanner(self.body, app, 'MY CAMPUS CARD / MY PROFILE',
+            f"Hello, {app.gateway.user['nickname']}.", 'Manage your profile, listings and account security.', 'account')
         self.banner.pack(fill='x', pady=(0, 20))
-        self.stats = StatStrip(self.body, [('我的商品', '管理闲置', lambda: app.show('mine')),
-            ('我的收藏', '接着逛逛', lambda: app.show('interactions', kind='favorites')),
-            ('购买意向', '继续沟通', lambda: app.show('interactions', kind='intentions'))])
+        self.stats = StatStrip(self.body, [('My listings', 'Manage listings', lambda: app.show('mine')),
+            ('Saved items', 'View saved items', lambda: app.show('interactions', kind='favorites')),
+            ('Enquiries', 'View enquiries', lambda: app.show('interactions', kind='intentions'))])
         self.stats.pack(fill='x', pady=(0, 12))
-        t.button(self.body, "查看我的操作记录  →", lambda: app.show("interactions", kind="logs"), "nav").pack(anchor="e")
+        t.button(self.body, "View my activity  →", lambda: app.show("interactions", kind="logs"), "nav").pack(anchor="e")
         area = ttk.Frame(self.body)
         area.pack(fill="x", pady=15)
         area.columnconfigure(0, weight=1)
         area.columnconfigure(1, weight=1)
         left = ttk.Frame(area, padding=(20,20,35,20), relief="solid", borderwidth=1)
         left.grid(row=0, column=0, sticky="nsew", padx=(0,25))
-        t.label(left, "个人资料", size=18, bold=True).pack(anchor="w", pady=(0,20))
-        t.label(left, "用户名", color=t.MUTED, size=10).pack(anchor="w")
+        t.label(left, "Profile", size=18, bold=True).pack(anchor="w", pady=(0,20))
+        t.label(left, "Username", color=t.MUTED, size=10).pack(anchor="w")
         t.label(left, app.gateway.user["username"], bold=True).pack(anchor="w", pady=(5,25))
         self.name_preview = t.label(left, app.gateway.user['nickname'], size=24, bold=True, color=t.BLUE)
         self.name_preview.pack(anchor='w', pady=(0, 15))
-        self.nickname = Field(left, "昵称", app.gateway.user["nickname"], hint="2–20 个中文、字母、数字或下划线。")
+        self.nickname = Field(left, "Display name", app.gateway.user["nickname"], hint="2–20 letters, Chinese characters, digits or underscores.")
         self.nickname.pack(fill="x")
-        self.nickname.observe(lambda: self.name_preview.configure(text=self.nickname.get() or '你的昵称'))
-        t.button(left, "保存昵称", self.save_nickname, "primary").pack(anchor="e", pady=10)
+        self.nickname.observe(lambda: self.name_preview.configure(text=self.nickname.get() or 'Your display name'))
+        t.button(left, "Save display name", self.save_nickname, "primary").pack(anchor="e", pady=10)
         self.original_nickname = self.nickname.get()
-        note_card(left, '一张容易被记住的校园名片', '昵称会出现在商品和公开留言中。修改昵称不会改变登录用户名。').pack(fill='x', pady=(16, 12))
-        self.motion_button = t.button(left, '恢复轻动效' if app.reduce_motion else '减少动态效果', self.toggle_motion, 'nav')
+        note_card(left, 'Help others recognise you', 'Your display name appears on listings and public comments. Your username stays the same.').pack(fill='x', pady=(16, 12))
+        self.motion_button = t.button(left, 'Enable animations' if app.reduce_motion else 'Reduce motion', self.toggle_motion, 'nav')
         self.motion_button.pack(anchor='w')
-        FoldNote(left, '校园名片怎么用？', '取一个容易辨认的昵称，让同学在商品和公开留言里认出你。昵称可更新，登录用户名保持不变。').pack(fill='x', pady=15)
+        FoldNote(left, 'About your profile', 'Choose a recognisable display name for listings and comments. You can change it without changing your username.').pack(fill='x', pady=15)
         right = ttk.Frame(area, padding=20, relief="solid", borderwidth=1)
         right.grid(row=0, column=1, sticky="nsew")
-        t.label(right, "修改密码", size=18, bold=True).pack(anchor="w", pady=(0,20))
+        t.label(right, "Change password", size=18, bold=True).pack(anchor="w", pady=(0,20))
         self.fields = {
-            "old": Field(right, "当前密码", secret=True),
-            "new": Field(right, "新密码", secret=True, hint="8–32 个字符，至少一个英文字母和一个数字，无空格。"),
-            "confirm": Field(right, "确认新密码", secret=True),
+            "old": Field(right, "Current password", secret=True),
+            "new": Field(right, "New password", secret=True, hint="8–32 characters, including a letter and a digit. No spaces."),
+            "confirm": Field(right, "Confirm new password", secret=True),
         }
         for field in self.fields.values():
             field.pack(fill="x")
         self.error = t.label(right, "", color=t.RED, wraplength=430, justify="left")
         self.error.pack(anchor="w", pady=(0,10))
-        t.button(right, "更新密码", self.save_password, "primary").pack(anchor="e", pady=10)
+        t.button(right, "Update password", self.save_password, "primary").pack(anchor="e", pady=10)
 
     def start(self):
         def load():
@@ -61,7 +61,7 @@ class AccountPage(ScrollPage):
 
     def toggle_motion(self):
         self.app.reduce_motion = not self.app.reduce_motion
-        self.motion_button.configure(text='恢复轻动效' if self.app.reduce_motion else '减少动态效果')
+        self.motion_button.configure(text='Enable animations' if self.app.reduce_motion else 'Reduce motion')
         self.banner.animate(0)
 
     def is_dirty(self):
@@ -75,9 +75,9 @@ class AccountPage(ScrollPage):
         def saved(user):
             self.nickname.set(user["nickname"])
             self.original_nickname = user["nickname"]
-            self.banner.heading.configure(text=f"你好，{user['nickname']}。")
+            self.banner.heading.configure(text=f"Hello, {user['nickname']}.")
             self.app.render_header()
-            self.app.notify("昵称已保存")
+            self.app.notify("Display name saved")
         self.app.run_task(lambda: self.app.gateway.nickname(value), saved,
                           lambda message: self.nickname.show_error(message))
 
@@ -87,17 +87,17 @@ class AccountPage(ScrollPage):
         values = {key: field.get() for key, field in self.fields.items()}
         errors = {}
         if not values["old"]:
-            errors["old"] = "请输入当前密码。"
+            errors["old"] = "Enter your current password."
         error = password_error(values["new"])
         if error:
             errors["new"] = error
         if values["new"] != values["confirm"]:
-            errors["confirm"] = "两次输入的新密码不一致。"
+            errors["confirm"] = "The new passwords do not match."
         if field_errors(self.fields, errors, self):
             return
         self.error.configure(text="")
         self.app.run_task(lambda: self.app.gateway.password(values["old"], values["new"]),
-                          lambda _: self.app.notify("密码已更新，下次登录请使用新密码。"),
+                          lambda _: self.app.notify("Password updated. Use the new password next time you sign in."),
                           lambda message: self.error.configure(text=message))
         for field in self.fields.values():
             field.set("")

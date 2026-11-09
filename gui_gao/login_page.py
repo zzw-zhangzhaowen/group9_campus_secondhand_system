@@ -16,66 +16,66 @@ class LoginPage(ScrollPage):
         self.body.columnconfigure(1, weight=1)
         left = tk.Frame(self.body, bg=t.BLUE, padx=26, pady=28)
         left.grid(row=0, column=0, sticky="nsew", padx=(0, 28))
-        t.label(left, "RE:CAMPUS / 好物循环计划", size=10, bold=True, color=t.LIME, bg=t.BLUE).pack(anchor="w")
-        t.label(left, "你的闲置，\n同学的新发现。", size=29, bold=True, justify="left",
+        t.label(left, "RE:CAMPUS / CAMPUS MARKET", size=10, bold=True, color=t.LIME, bg=t.BLUE).pack(anchor="w")
+        t.label(left, "Your spare items.\nTheir next find.", size=29, bold=True, justify="left",
                 color=t.WHITE, bg=t.BLUE).pack(anchor="w", pady=(18, 12))
-        t.label(left, "从一本书、一盏灯开始，\n让校园里的好物继续被使用。", color='#DBE6FF',
+        t.label(left, "Books, lamps and everyday items.\nGive them a second life on campus.", color='#DBE6FF',
                 bg=t.BLUE, justify="left", size=12).pack(anchor="w")
         self.artwork = AuthArtwork(left, app)
         self.artwork.pack(anchor="center", pady=(20, 12))
-        self.light_button = t.button(left, '点亮书桌 ✦', self.toggle_light, 'accent')
+        self.light_button = t.button(left, 'Turn on the lamp ✦', self.toggle_light, 'accent')
         self.light_button.pack(anchor='center')
-        t.label(left, "发现好物   /   轻松发布   /   校园相遇", size=10,
+        t.label(left, "Browse   /   List   /   Meet on campus", size=10,
                 color=t.LIME, bg=t.BLUE).pack(anchor="w", pady=(12, 0))
         t.label(left, "LESS WASTE.  MORE STORIES.", size=9, color='#DBE6FF', bg=t.BLUE).pack(anchor="w", pady=(10, 0))
         right = ttk.Frame(self.body, padding=(0, 15, 8, 15))
         right.grid(row=0, column=1, sticky="nsew")
         tabs = ttk.Frame(right)
         tabs.pack(fill="x", pady=(0, 25))
-        for route, title in [("login", "登录"), ("register", "注册账号")]:
+        for route, title in [("login", "Sign in"), ("register", "Register")]:
             t.button(tabs, title, lambda r=route: app.show(r),
                      "selected" if app.route == route else "nav").pack(side="left", padx=(0, 8))
         t.label(right, "START YOUR CAMPUS STORY" if self.registering else "GOOD TO SEE YOU AGAIN", size=9,
                 bold=True, color=t.BLUE).pack(anchor="w")
-        t.label(right, "加入校园二手" if self.registering else "欢迎回来。", size=27, bold=True).pack(anchor="w", pady=(9, 8))
-        t.label(right, "给闲置一个新的开始。" if self.registering else "登录，接着发现你的下一件好物。",
+        t.label(right, "Join Campus Market" if self.registering else "Welcome back.", size=27, bold=True).pack(anchor="w", pady=(9, 8))
+        t.label(right, "Find a new home for your spare items." if self.registering else "Sign in to browse and manage your items.",
                 color=t.MUTED, size=11).pack(anchor="w", pady=(0, 23))
         self.fields = {}
-        self.fields["username"] = Field(right, "用户名", hint="3–20 个字符，以英文字母开头。" if self.registering else "")
+        self.fields["username"] = Field(right, "Username", hint="3–20 characters, starting with a letter." if self.registering else "")
         if self.registering:
-            self.fields["nickname"] = Field(right, "昵称", hint="2–20 个中文、字母、数字或下划线。")
-        self.fields["password"] = Field(right, "密码", secret=True,
-            hint="8–32 个字符，至少一个英文字母和一个数字，无空格。" if self.registering else "")
+            self.fields["nickname"] = Field(right, "Display name", hint="2–20 letters, Chinese characters, digits or underscores.")
+        self.fields["password"] = Field(right, "Password", secret=True,
+            hint="8–32 characters, including a letter and a digit. No spaces." if self.registering else "")
         if self.registering:
-            self.fields["confirm"] = Field(right, "确认密码", secret=True)
+            self.fields["confirm"] = Field(right, "Confirm password", secret=True)
         for field in self.fields.values():
             field.pack(fill="x")
             field.input.bind("<Return>", lambda e: self.submit())
         self.password_visible = False
-        self.visibility_button = t.button(right, "显示密码", self.toggle_password, "nav")
+        self.visibility_button = t.button(right, "Show password", self.toggle_password, "nav")
         self.visibility_button.pack(anchor="e", pady=(0, 5))
         self.error = t.label(right, "", color=t.RED, wraplength=450, justify="left")
         self.error.pack(anchor="w", pady=(0,10))
-        t.button(right, "创建账号  →" if self.registering else "登录，去逛校园  →", self.submit, "primary").pack(fill="x")
-        t.label(right, "账号用于管理商品和公开互动。平台不提供线上支付。",
+        t.button(right, "Create account  →" if self.registering else "Sign in and browse  →", self.submit, "primary").pack(fill="x")
+        t.label(right, "Use your account to manage listings and public comments. No online payments.",
                 size=10, color=t.MUTED, wraplength=380, justify="left").pack(anchor="w", pady=(16, 0))
         if app.demo and not self.registering:
             demo = tk.Frame(right, bg=t.PALE, padx=16, pady=14)
             demo.pack(fill="x", pady=(20, 0))
-            t.label(demo, "先体验一下校园生活", bold=True, size=11, bg=t.PALE, color=t.BLUE).pack(anchor="w")
-            t.label(demo, "虚构演示账号 · 关闭后清空演示数据", size=10, bg=t.PALE, color=t.MUTED).pack(anchor="w", pady=5)
-            t.button(demo, "填入演示账号  ↗", self.fill_demo, "nav").pack(anchor="w")
+            t.label(demo, "Try the demo", bold=True, size=11, bg=t.PALE, color=t.BLUE).pack(anchor="w")
+            t.label(demo, "Fictional demo account · Data is cleared on exit", size=10, bg=t.PALE, color=t.MUTED).pack(anchor="w", pady=5)
+            t.button(demo, "Use demo account  ↗", self.fill_demo, "nav").pack(anchor="w")
 
     def toggle_light(self):
         lit = self.artwork.toggle_light()
-        self.light_button.configure(text='关掉灯光 ☾' if lit else '点亮书桌 ✦')
+        self.light_button.configure(text='Turn off the lamp ☾' if lit else 'Turn on the lamp ✦')
 
     def toggle_password(self):
         self.password_visible = not self.password_visible
         for key in ("password", "confirm"):
             if key in self.fields:
                 self.fields[key].input.configure(show="" if self.password_visible else "•")
-        self.visibility_button.configure(text="隐藏密码" if self.password_visible else "显示密码")
+        self.visibility_button.configure(text="Hide password" if self.password_visible else "Show password")
 
     def fill_demo(self):
         if self.app.demo:
@@ -92,7 +92,7 @@ class LoginPage(ScrollPage):
             return
         values = {key: field.get() for key, field in self.fields.items()}
         errors = registration_errors(values) if self.registering else {
-            k: "请填写此项。" for k, v in values.items() if not v.strip()}
+            k: "This field is required." for k, v in values.items() if not v.strip()}
         if field_errors(self.fields, errors, self):
             return
         self.error.configure(text="")
@@ -105,7 +105,7 @@ class LoginPage(ScrollPage):
             if self.registering:
                 self.app.show("login", force=True)
                 self.app.page.fields["username"].set(user["username"])
-                self.app.notify("注册成功，请使用新账号登录。")
+                self.app.notify("Account created. Sign in with your new account.")
             else:
                 self.app.show("home", force=True)
 

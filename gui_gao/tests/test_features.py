@@ -3,6 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import patch
 from gui_gao.gateway import Gateway, UserError
 from gui_gao.feature_gateway import service_class
 from backend_zhang import json_store
@@ -13,10 +14,10 @@ class FeatureIntegrationTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix='group9-features-')
         self.addCleanup(self.temp.cleanup)
         self.g = Gateway.isolated(self.temp.name)
-        self.g.register('seller_one', 'Campus123', '小卖家')
-        self.g.register('buyer_one', 'Campus123', '小买家')
+        self.g.register('seller_one', 'Campus123', 'Seller')
+        self.g.register('buyer_one', 'Campus123', 'Buyer')
         self.g.login('seller_one', 'Campus123')
-        self.item = self.g.save_item(dict(name='测试键盘', category='电子产品', price='88', description='蓝牙键盘', image_path=''))
+        self.item = self.g.save_item(dict(name='Test keyboard', category='Electronics', price='88', description='Bluetooth keyboard', image_path=''))
         self.g.login('buyer_one', 'Campus123')
 
     def test_private_loader_preserves_global_storage_module(self):
@@ -29,32 +30,33 @@ class FeatureIntegrationTests(unittest.TestCase):
         self.g.features.toggle_favorite(self.item['id'])
         other = Gateway.isolated(self.temp.name)
         other.login('buyer_one', 'Campus123')
-        self.assertEqual(other.features.favorites()[0]['name'], '测试键盘')
+        self.assertEqual(other.features.favorites()[0]['name'], 'Test keyboard')
         other.login('seller_one', 'Campus123')
         self.assertEqual(other.features.favorites(), [])
         self.assertFalse(self.g.features.toggle_favorite(self.item['id'])['favorited'])
 
-    def test_deleted_favorite_keeps_identity_and_can_be_removed(self):
+    def test_deleted_favorite_keeps_history_and_respects_service_restriction(self):
         self.g.features.toggle_favorite(self.item['id'])
         self.g.login('seller_one', 'Campus123')
         self.g.change_item('delete', self.item['id'])
         self.g.login('buyer_one', 'Campus123')
         record = self.g.features.favorites()[0]
-        self.assertEqual((record['name'],record['status']), ('测试键盘','已删除'))
-        self.g.features.toggle_favorite(self.item['id'])
-        self.assertEqual(self.g.features.favorites(), [])
+        self.assertEqual((record['name'],record['status']), ('Test keyboard','Deleted'))
+        with self.assertRaises(UserError):
+            self.g.features.toggle_favorite(self.item['id'])
+        self.assertEqual(len(self.g.features.favorites()), 1)
 
     def test_messages_validated_persisted_and_related_thread(self):
-        for content in ['', ' \n ', '字'*501]:
+        for content in ['', ' \n ', 'x'*501]:
             with self.assertRaises(UserError): self.g.features.add_message(self.item['id'], content)
-        self.g.features.add_message(self.item['id'], ' 请问配件齐全吗？ ')
+        self.g.features.add_message(self.item['id'], ' Are all accessories included? ')
         messages = self.g.features.messages(self.item['id'])
-        self.assertEqual(messages[0]['content'], '请问配件齐全吗？')
-        self.assertEqual(messages[0]['nickname'], '小买家')
+        self.assertEqual(messages[0]['content'], 'Are all accessories included?')
+        self.assertEqual(messages[0]['nickname'], 'Buyer')
         self.assertEqual(len(self.g.features.threads()), 1)
         self.g.login('seller_one', 'Campus123')
         self.assertEqual(len(self.g.features.threads()), 1)
-        self.g.features.add_message(self.item['id'], '齐全。')
+        self.g.features.add_message(self.item['id'], 'Yes, all included.')
         self.assertEqual(len(self.g.features.messages(self.item['id'])), 2)
 
     def test_intentions_buyer_seller_views_duplicate_and_self_guard(self):
@@ -62,17 +64,17 @@ class FeatureIntegrationTests(unittest.TestCase):
         self.assertEqual(len(self.g.features.intentions()), 1)
         with self.assertRaises(UserError): self.g.features.create_intention(self.item['id'])
         self.g.login('seller_one', 'Campus123')
-        self.assertEqual(self.g.features.intentions()[0]['buyer'], '小买家')
+        self.assertEqual(self.g.features.intentions()[0]['buyer'], 'Buyer')
         with self.assertRaises(UserError): self.g.features.create_intention(self.item['id'])
 
     def test_deleted_unbookmarked_discussion_remains_only_for_participants(self):
-        self.g.features.add_message(self.item['id'], '配件齐全吗？')
+        self.g.features.add_message(self.item['id'], 'Are accessories included?')
         self.g.login('seller_one', 'Campus123')
         self.g.change_item('delete', self.item['id'])
-        self.assertEqual(self.g.features.threads()[0]['item']['status'], '已删除')
+        self.assertEqual(self.g.features.threads()[0]['item']['status'], 'Deleted')
         self.g.login('buyer_one', 'Campus123')
         self.assertEqual(len(self.g.features.threads()), 1)
-        self.g.register('outsider_one', 'Campus123', '其他同学')
+        self.g.register('outsider_one', 'Campus123', 'OtherStudent')
         self.g.login('outsider_one', 'Campus123')
         self.assertEqual(self.g.features.threads(), [])
 
@@ -90,16 +92,45 @@ class FeatureIntegrationTests(unittest.TestCase):
     def test_inactive_goods_block_new_activity_but_keep_history(self):
         self.g.features.toggle_favorite(self.item['id'])
         self.g.features.create_intention(self.item['id'])
-        self.g.features.add_message(self.item['id'], '你好')
+        self.g.features.add_message(self.item['id'], 'Hello')
         self.g.login('seller_one', 'Campus123')
         self.g.change_item('remove', self.item['id'])
         self.g.login('buyer_one', 'Campus123')
         for operation in [lambda: self.g.features.add_message(self.item['id'], 'hi'), lambda: self.g.features.create_intention(self.item['id'])]:
             with self.assertRaises(UserError): operation()
-        self.assertEqual(self.g.features.intentions()[0]['item']['status'], '已下架')
+        self.assertEqual(self.g.features.intentions()[0]['item']['status'], 'Off sale')
         self.assertEqual(len(self.g.features.messages(self.item['id'])),1)
-        self.g.features.toggle_favorite(self.item['id'])
         with self.assertRaises(UserError): self.g.features.toggle_favorite(self.item['id'])
+        self.g.login('seller_one', 'Campus123')
+        self.g.change_item('restore', self.item['id'])
+        self.g.login('buyer_one', 'Campus123')
+        self.assertFalse(self.g.features.toggle_favorite(self.item['id'])['favorited'])
+
+    def test_isolated_feature_validation_never_uses_production_services(self):
+        from backend_zhang import user_service, item_service
+        with patch.object(user_service, 'get_user_service', side_effect=AssertionError('Production users accessed')), \
+             patch.object(item_service, 'get_item_service', side_effect=AssertionError('Production items accessed')):
+            self.assertTrue(self.g.features.toggle_favorite(self.item['id'])['favorited'])
+            self.g.features.add_message(self.item['id'], 'Test comment')
+            self.g.features.create_intention(self.item['id'])
+            self.assertEqual(len(self.g.features.intentions()), 1)
+            self.assertTrue(self.g.features.logs())
+            self.assertFalse(self.g.warning)
+
+    def test_feature_contexts_with_matching_ids_remain_separate(self):
+        with tempfile.TemporaryDirectory() as other_dir:
+            other = Gateway.isolated(other_dir)
+            other.register('other_user', 'Campus123', 'OtherStudent')
+            other.login('other_user', 'Campus123')
+            own = other.save_item(dict(name='Other item', category='Books', price='12',
+                                       description='Separate directory', image_path=''))
+            self.assertEqual(own['id'], self.item['id'])
+            self.g.features.toggle_favorite(self.item['id'])
+            self.g.features.add_message(self.item['id'], 'First context')
+            other.features.add_message(own['id'], 'Second context')
+            self.assertEqual(other.features.favorites(), [])
+            self.assertEqual([m['content'] for m in other.features.messages(own['id'])], ['Second context'])
+            self.assertEqual([m['content'] for m in self.g.features.messages(self.item['id'])], ['First context'])
 
     def test_logs_filter_identity_and_exclude_secrets(self):
         self.g.features.add_message(self.item['id'], 'private message content')
@@ -121,7 +152,7 @@ class FeatureIntegrationTests(unittest.TestCase):
         path.write_text('{broken', encoding='utf-8')
         value = self.g.features.create_intention(self.item['id'])
         self.assertTrue(value['intention_id'])
-        self.assertIn('操作已保存', self.g.warning)
+        self.assertIn('Changes saved', self.g.warning)
         self.assertEqual(len(self.g.features.intentions()), 1)
         self.assertEqual(path.read_text(), '{broken')
 

@@ -16,7 +16,7 @@ class ItemPage(ScrollPage):
         self.item = None
         self.favorited = False
         self.intended = False
-        t.button(self.body, "‹ 返回商品列表", lambda: app.show("home"), "nav").pack(anchor="w", pady=(0,20))
+        t.button(self.body, "‹ Back to items", lambda: app.show("home"), "nav").pack(anchor="w", pady=(0,20))
         self.area = ttk.Frame(self.body)
         self.area.pack(fill="both", expand=True)
 
@@ -35,7 +35,7 @@ class ItemPage(ScrollPage):
     def failed(self, message):
         for child in self.area.winfo_children():
             child.destroy()
-        empty_state(self.area, "暂时无法查看这件商品", message, self.start)
+        empty_state(self.area, "Could not open this item", message, self.start)
 
     def render(self, data):
         item, names, error = data
@@ -50,34 +50,36 @@ class ItemPage(ScrollPage):
         picture.pack(fill="x")
         picture.configure(cursor='hand2')
         picture.bind('<Button-1>', lambda _: self.zoom_image())
-        t.button(left, '放大查看图片  ↗', self.zoom_image, 'nav').pack(anchor='e', pady=8)
-        note_card(left, '每件好物，都有继续的可能', '01  看清照片、描述与使用情况。\n02  在留言区确认配件和交收安排。\n03  线下见面检查，双方确认后交接。').pack(fill='x', pady=(12,20))
-        FoldNote(left, '看图时，可以留意什么？', '留意边角、屏幕、接口等易磨损位置。当前只有一张商品图，细节不足可以在下方留言询问。').pack(fill='x', pady=(0, 16))
+        t.button(left, 'Enlarge image  ↗', self.zoom_image, 'nav').pack(anchor='e', pady=8)
+        note_card(left, 'Before you arrange a handover', '01  Review the photo, description and condition.\n02  Ask about accessories and meeting arrangements.\n03  Inspect the item together before handing it over.').pack(fill='x', pady=(12,20))
+        FoldNote(left, 'What should I check in the photo?', 'Look at edges, screens and connectors for wear. Each listing has one photo; ask in the comments if you need more detail.').pack(fill='x', pady=(0, 16))
         if picture.reason:
-            t.label(left, "卖家未上传可预览的图片，可参考右侧商品描述。", size=10, color=t.MUTED,
+            t.label(left, "No image preview is available. Check the description on the right.", size=10, color=t.MUTED,
                     wraplength=420).pack(anchor="w", pady=10)
         right = ttk.Frame(self.area, padding=(5,0,5,20))
         right.grid(row=0, column=1, sticky="nsew")
-        t.label(right, f"{item['category']}  /  {item['status']}", color=t.GREEN if item["status"] == "在售" else t.MUTED).pack(anchor="w")
+        t.label(right, f"{item['category']}  /  {item['status']}", color=t.GREEN if item["status"] == "Available" else t.MUTED).pack(anchor="w")
         t.label(right, item["name"], size=26, bold=True, wraplength=460, justify="left").pack(anchor="w", pady=(15,20))
         t.label(right, f"¥ {item['price']:.2f}", size=34, bold=True, color=t.BLUE).pack(anchor="w", pady=(0,20))
         ttk.Separator(right).pack(fill="x", pady=12)
-        t.label(right, "商品描述", bold=True).pack(anchor="w", pady=(8,10))
+        t.label(right, "Description", bold=True).pack(anchor="w", pady=(8,10))
         t.label(right, item["description"], wraplength=440, justify="left").pack(anchor="w", pady=(0,20))
-        t.label(right, "发布人", size=10, color=t.MUTED).pack(anchor="w", pady=(12,5))
-        t.label(right, names.get(item["seller_id"], "校园同学"), bold=True).pack(anchor="w")
-        t.label(right, f"发布时间  {item.get('created_at', '')}", size=10, color=t.MUTED).pack(anchor="w", pady=(12,5))
-        t.label(right, f"更新时间  {item.get('updated_at', '')}", size=10, color=t.MUTED).pack(anchor="w")
+        t.label(right, "Seller", size=10, color=t.MUTED).pack(anchor="w", pady=(12,5))
+        t.label(right, names.get(item["seller_id"], "Student"), bold=True).pack(anchor="w")
+        t.label(right, f"Listed  {item.get('created_at', '')}", size=10, color=t.MUTED).pack(anchor="w", pady=(12,5))
+        t.label(right, f"Updated  {item.get('updated_at', '')}", size=10, color=t.MUTED).pack(anchor="w")
         if item["seller_id"] == self.app.gateway.user_id():
-            t.button(right, "编辑这件商品", lambda: self.app.show("publish", item_id=item["id"]), "primary").pack(fill="x", pady=(28,10))
-            t.button(right, "前往我的商品管理", lambda: self.app.show("mine")).pack(fill="x")
+            t.button(right, "Edit item", lambda: self.app.show("publish", item_id=item["id"]), "primary").pack(fill="x", pady=(28,10))
+            t.button(right, "Manage my listings", lambda: self.app.show("mine")).pack(fill="x")
         else:
-            self.intention_button = t.button(right, "已提交意向 · 查看" if self.intended else "我想要  →", self.intention, "primary")
+            self.intention_button = t.button(right, "Enquiry sent · View" if self.intended else "I am interested  →", self.intention, "primary")
             self.intention_button.pack(fill="x", pady=(24, 10))
-            t.label(right, "提交兴趣后，到商品留言区与卖家沟通。不会扣款或预订。", color=t.MUTED, size=10, wraplength=410, justify="left").pack(anchor="w")
+            t.label(right, "Continue in the comments after sending an enquiry. No payment or reservation is made.", color=t.MUTED, size=10, wraplength=410, justify="left").pack(anchor="w")
 
-        self.favorite_button = t.button(right, "♥ 已收藏" if self.favorited else "♡ 收藏这件好物", self.favorite)
+        self.favorite_button = t.button(right, "♥ Saved" if self.favorited else "♡ Save item", self.favorite)
         self.favorite_button.pack(fill="x", pady=12)
+        if item['status'] != 'Available':
+            self.favorite_button.configure(state='disabled')
         self.feature_error = t.label(right, error, color=t.RED, size=10, wraplength=410, justify="left")
         self.feature_error.pack(anchor="w")
         self.messages_panel = MessagePanel(self.area, self.app, item)
@@ -88,7 +90,7 @@ class ItemPage(ScrollPage):
         if not self.item:
             return
         window = tk.Toplevel(self.app.root)
-        window.title(self.item['name']+' · 商品图片')
+        window.title(self.item['name']+' · Item image')
         window.transient(self.app.root)
         window.geometry('700x600')
         window.configure(bg=t.WHITE)
@@ -116,15 +118,15 @@ class ItemPage(ScrollPage):
             counter.configure(text=f'{scale[0]*100}%')
             smaller.configure(state='disabled' if scale[0] == 1 else 'normal')
             larger.configure(state='disabled' if scale[0] == 3 else 'normal')
-        smaller = t.button(controls, '− 缩小', lambda: zoom(-1))
+        smaller = t.button(controls, '− Zoom out', lambda: zoom(-1))
         smaller.pack(side='left', padx=8)
         counter.pack(side='left', padx=8)
-        larger = t.button(controls, '＋ 放大', lambda: zoom(1))
+        larger = t.button(controls, '＋ Zoom in', lambda: zoom(1))
         larger.pack(side='left', padx=8)
-        t.button(controls, '复位', zoom, 'nav').pack(side='left', padx=8)
+        t.button(controls, 'Reset', zoom, 'nav').pack(side='left', padx=8)
         zoom()
-        t.label(window, '放大后使用滚动条查看细节 · '+self.item['name'], size=10).pack(pady=8)
-        t.button(window, '关闭预览', window.destroy).pack(pady=(0, 15))
+        t.label(window, 'Use the scrollbars to inspect the enlarged image · '+self.item['name'], size=10).pack(pady=8)
+        t.button(window, 'Close preview', window.destroy).pack(pady=(0, 15))
         window.bind('<Escape>', lambda _: window.destroy())
         window.focus_set()
 
@@ -134,9 +136,9 @@ class ItemPage(ScrollPage):
     def favorite(self):
         def saved(value):
             self.favorited = value['favorited']
-            self.favorite_button.configure(text="♥ 已收藏" if self.favorited else "♡ 收藏这件好物")
+            self.favorite_button.configure(text="♥ Saved" if self.favorited else "♡ Save item")
             self.feature_error.configure(text="")
-            self.app.notify("已加入收藏" if self.favorited else "已取消收藏")
+            self.app.notify("Item saved" if self.favorited else "Item removed from saved items")
         self.app.run_task(lambda: self.app.gateway.features.toggle_favorite(self.item_id), saved,
                           lambda message: self.feature_error.configure(text=message))
 
@@ -146,12 +148,12 @@ class ItemPage(ScrollPage):
         if self.intended:
             self.app.show('interactions', kind='intentions')
             return
-        if not messagebox.askyesno('提交购买意向？', f"向卖家表达对“{self.item['name']}”的兴趣？\n\n此操作不会扣款，也不会预订商品。", parent=self.app.root, default='no'):
+        if not messagebox.askyesno('Send an enquiry?', f"Tell the seller you are interested in “{self.item['name']}”?\n\nThis does not charge or reserve the item.", parent=self.app.root, default='no'):
             return
         def saved(_):
             self.intended = True
-            self.intention_button.configure(text='已提交意向 · 查看')
+            self.intention_button.configure(text='Enquiry sent · View')
             self.feature_error.configure(text='')
-            self.app.notify('意向已提交，可在购买意向页查看。')
+            self.app.notify('Enquiry sent. View it on the Enquiries page.')
         self.app.run_task(lambda: self.app.gateway.features.create_intention(self.item_id), saved,
                           lambda message: self.feature_error.configure(text=message))

@@ -25,17 +25,17 @@ class PageBanner(tk.Frame):
         self.art = SceneArtwork(artwork_box, app, scene)
         self.art.pack()
         if self.art.is_loop:
-            self.motion_control = tk.Button(artwork_box, text='Ⅱ 暂停动画',
+            self.motion_control = tk.Button(artwork_box, text='Ⅱ Pause animation',
                                             command=self.toggle_animation, bg=t.BLUE,
                                             fg=t.WHITE, highlightbackground=t.BLUE,
                                             font=(t.FAMILY, 10))
             self.motion_control.pack(pady=(0, 4))
             if getattr(app, 'reduce_motion', False):
-                self.motion_control.configure(text='已减少动态', state='disabled')
+                self.motion_control.configure(text='Reduced motion', state='disabled')
 
     def toggle_animation(self):
         paused = self.art.toggle_motion()
-        self.motion_control.configure(text='▶ 播放动画' if paused else 'Ⅱ 暂停动画')
+        self.motion_control.configure(text='▶ Play animation' if paused else 'Ⅱ Pause animation')
 
     def animate(self, target):
         self.art.animate(target)
@@ -231,7 +231,7 @@ class LocalChecklist(ttk.Frame):
     def __init__(self, parent, title, items):
         super().__init__(parent, padding=18, relief='solid', borderwidth=1)
         t.label(self, title, bold=True, color=t.BLUE, wraplength=360, justify='left').pack(anchor='w')
-        t.label(self, '仅本页自检，不代表交易状态，不会发送给对方。', size=9,
+        t.label(self, 'A personal checklist only. It does not change the listing or notify anyone.', size=9,
                 color=t.MUTED, wraplength=350, justify='left').pack(anchor='w', pady=(8, 12))
         self.values = []
         for item in items:
@@ -244,7 +244,7 @@ class LocalChecklist(ttk.Frame):
 
     def update_count(self):
         count = sum(v.get() for v in self.values)
-        self.summary.configure(text=f'{count} / {len(self.values)} 已确认', fg=t.GREEN if count == len(self.values) else t.MUTED)
+        self.summary.configure(text=f'{count} / {len(self.values)} checked', fg=t.GREEN if count == len(self.values) else t.MUTED)
 
 
 class FoldNote(ttk.Frame):

@@ -8,19 +8,19 @@ DEMO_PASSWORD = "Campus123"
 
 def create_demo(directory):
     gateway = Gateway.isolated(directory)
-    users = [(DEMO_USERNAME, "Gao同学"), ("lin_demo", "小林"), ("chen_demo", "陈同学")]
+    users = [(DEMO_USERNAME, "Gao"), ("lin_demo", "Lin"), ("chen_demo", "Chen")]
     for username, nickname in users:
         gateway.register(username, DEMO_PASSWORD, nickname)
     assets = Path(__file__).parent / "assets"
     samples = [
-        (0, "Python 入门教材", "书籍", "35", "九成新，少量铅笔笔记。适合 Python 入门学习。", "book"),
-        (1, "无线键盘", "电子产品", "88", "蓝牙连接正常，键帽整洁。附充电线。", "keyboard"),
-        (2, "桌面阅读灯", "生活用品", "45", "暖白光，可调整角度。宿舍阅读使用，功能正常。", "lamp"),
-        (0, "轻便帆布包", "服饰", "22", "米色帆布袋，可放 A4 书本。已清洗，无破损。", "bag"),
-        (1, "连帽卫衣 M 码", "服饰", "60", "浅蓝色，M 码，少量穿着。尺寸可参考描述。", "hoodie"),
-        (2, "不锈钢保温杯", "生活用品", "28", "450ml，外观完好。已清洁，请收到后再次清洗。", "bottle"),
-        (0, "科学计算器", "电子产品", "50", "按键和显示正常，适合日常计算。附保护盖。", "calculator"),
-        (1, "横线笔记本三本", "书籍", "15", "三本全新横线本，每本 80 页，适合课堂笔记。", "notebook"),
+        (0, "Python textbook", "Books", "35", "Good condition with a few pencil notes. Suitable for Python beginners.", "book"),
+        (1, "Wireless keyboard", "Electronics", "88", "Bluetooth works well. Clean keycaps. Charging cable included.", "keyboard"),
+        (2, "Reading lamp", "Home & Living", "45", "Warm white light with an adjustable angle. Used for reading; works well.", "lamp"),
+        (0, "Canvas tote bag", "Clothing", "22", "Beige canvas bag with room for A4 books. Washed and undamaged.", "bag"),
+        (1, "Hoodie size M", "Clothing", "60", "Light blue, size M, lightly worn. Ask about measurements before meeting.", "hoodie"),
+        (2, "Travel mug", "Home & Living", "28", "450 ml, good condition. Cleaned; please wash again before use.", "bottle"),
+        (0, "Calculator", "Electronics", "50", "Keys and display work well. Protective cover included.", "calculator"),
+        (1, "3 lined notebooks", "Books", "15", "Three unused lined notebooks, 80 pages each. Suitable for class notes.", "notebook"),
     ]
     for user_index, name, category, price, description, asset in samples:
         gateway.login(users[user_index][0], DEMO_PASSWORD)
@@ -28,15 +28,15 @@ def create_demo(directory):
                           description=description, image_path=str(assets / f"{asset}.png")))
     gateway.login("lin_demo", DEMO_PASSWORD)
     gateway.features.toggle_favorite(1)
-    gateway.features.add_message(1, "这本书适合没有基础的同学吗？")
+    gateway.features.add_message(1, "Is this book suitable for beginners?")
     gateway.features.create_intention(1)
     gateway.login(DEMO_USERNAME, DEMO_PASSWORD)
-    gateway.features.add_message(1, "适合的，包含基础语法和练习，可以先看看目录。")
+    gateway.features.add_message(1, "Yes. It includes basic syntax and exercises. You can check the contents first.")
     gateway.features.toggle_favorite(2)
     gateway.features.toggle_favorite(3)
-    gateway.features.add_message(2, "键盘可以连接 Mac 吗？")
+    gateway.features.add_message(2, "Does this keyboard work with a Mac?")
     gateway.features.create_intention(2)
     gateway.login("lin_demo", DEMO_PASSWORD)
-    gateway.features.add_message(2, "可以，蓝牙连接正常。")
+    gateway.features.add_message(2, "Yes, the Bluetooth connection works well.")
     gateway.logout()
     return gateway
