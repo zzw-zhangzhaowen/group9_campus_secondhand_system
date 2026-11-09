@@ -1,7 +1,8 @@
-"""密码安全处理（隔离在本模块，其他模块不得自行实现哈希逻辑）。
+"""Password security (isolated here; other modules must not implement their own hashing).
 
-方案：secrets 生成随机盐 + hashlib.pbkdf2_hmac 派生哈希 + hmac.compare_digest 定时比较。
-明文密码既不落盘也不进日志。
+Scheme: secrets random salt + hashlib.pbkdf2_hmac key derivation +
+hmac.compare_digest constant-time comparison. Plaintext passwords are never
+written to disk or logs.
 """
 
 from __future__ import annotations
@@ -14,12 +15,12 @@ from backend_zhang import config
 
 
 def generate_salt() -> str:
-    """生成随机盐值（十六进制字符串）。"""
+    """Generate a random salt (hex string)."""
     return secrets.token_hex(config.SALT_BYTES)
 
 
 def hash_password(password: str, salt: str) -> str:
-    """使用 PBKDF2-HMAC 派生密码哈希。"""
+    """Derive a password hash using PBKDF2-HMAC."""
     derived = hashlib.pbkdf2_hmac(
         config.PBKDF2_ALGORITHM,
         str(password).encode("utf-8"),
@@ -30,7 +31,7 @@ def hash_password(password: str, salt: str) -> str:
 
 
 def verify_password(password: str, salt: str, expected_hash: str) -> bool:
-    """校验密码是否匹配已保存的哈希（定时安全比较）。"""
+    """Verify a password against the stored hash (constant-time comparison)."""
     if not salt or not expected_hash:
         return False
     actual = hash_password(password, salt)

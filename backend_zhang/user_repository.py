@@ -1,6 +1,7 @@
-"""用户数据访问层（users.json 只由本包维护，其他模块不得直接打开）。
+"""User data access layer (users.json is maintained only by this package; other
+modules must not open it directly).
 
-只做数据读写，不含业务规则；业务规则放在 user_service。
+Only reads/writes data, no business rules; business rules live in user_service.
 """
 
 from __future__ import annotations
@@ -18,14 +19,14 @@ class UserRepository:
     def data_file(self) -> str:
         return self.store.path
 
-    # ---------- 内部读写（下划线开头，不对外提供） ----------
+    # ---------- Internal read/write (underscore-prefixed, not exposed) ----------
     def _load_users(self) -> list[dict]:
         return self.store.load()
 
     def _save_users(self, users: list[dict]) -> None:
         self.store.save(users)
 
-    # ---------- 查询 ----------
+    # ---------- Query ----------
     def list_users(self) -> list[dict]:
         return [dict(user) for user in self._load_users()]
 
@@ -36,7 +37,7 @@ class UserRepository:
         return None
 
     def find_by_username(self, username: str) -> dict | None:
-        """用户名查重不区分大小写（Student_01 与 student_01 视为同一个用户名）。"""
+        """Username lookup is case-insensitive (Student_01 and student_01 are the same)."""
         target = str(username).strip().lower()
         for user in self._load_users():
             if str(user.get("username", "")).strip().lower() == target:
@@ -46,17 +47,17 @@ class UserRepository:
     def exists(self, user_id: int) -> bool:
         return self.find_by_id(user_id) is not None
 
-    # ---------- 写入 ----------
+    # ---------- Write ----------
     def create(self, record: dict) -> dict:
-        """新增用户并分配自增 ID；用户名重复时抛 ConflictError。"""
+        """Create a user with an auto-incremented ID; raises ConflictError on duplicate username."""
         payload = dict(record)
 
         def mutator(users: list[dict]) -> dict:
             target = str(payload.get("username", "")).strip().lower()
             for user in users:
                 if str(user.get("username", "")).strip().lower() == target:
-                    raise ConflictError("用户名已存在")
-            # id 放最前，保证 users.json 的字段顺序与文档一致
+                    raise ConflictError("Username already exists")
+            # Put id first so the field order in users.json matches the document.
             record = {"id": self._next_id(users), **payload}
             users.append(record)
             return dict(record)
@@ -64,7 +65,7 @@ class UserRepository:
         return self.store.transaction(mutator)
 
     def update(self, user_id: int, changes: dict) -> dict | None:
-        """按 ID 更新字段，返回更新后的记录；用户不存在返回 None。"""
+        """Update fields by ID, returning the updated record; None if not found."""
         def mutator(users: list[dict]) -> dict | None:
             for user in users:
                 if user.get("id") == user_id:
@@ -74,7 +75,7 @@ class UserRepository:
 
         return self.store.transaction(mutator)
 
-    # ---------- 主键 ----------
+    # ---------- Primary key ----------
     @staticmethod
     def _next_id(users: list[dict]) -> int:
         largest = 0

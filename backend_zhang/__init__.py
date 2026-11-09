@@ -1,10 +1,11 @@
-"""后端核心包（负责人：ZHANG ZHAOWEN）。
+"""Backend core package (owner: ZHANG ZHAOWEN).
 
-对外只暴露两层内容：
-1. user_service / item_service 中的公开接口函数；
-2. 统一返回格式 {"success": bool, "message": str, "data": Any}。
+Only two layers are exposed publicly:
+1. the public interface functions in user_service / item_service;
+2. the unified response format {"success": bool, "message": str, "data": Any}.
 
-内部实现（数据读写、哈希、权限判断）不对外提供，其他组员不得直接调用。
+Internal implementation (data read/write, hashing, permission checks) is not
+exposed; other team members must not call it directly.
 """
 
 __all__ = [

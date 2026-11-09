@@ -1,7 +1,8 @@
-"""商品模块服务层（对外公开接口）。
+"""Item module service layer (public interface).
 
-职责：参数校验、权限判断、状态流转、搜索排序、统一返回格式。
-数据读写全部通过 item_repository 完成，服务层不直接打开 JSON 文件。
+Responsibilities: argument validation, permission checks, status transitions,
+search/sort, and the unified response format. All data reads/writes go through
+item_repository; the service layer never opens JSON files directly.
 """
 
 from __future__ import annotations
@@ -18,17 +19,17 @@ from backend_zhang.json_store import now_text
 from backend_zhang.response import failure, success
 from backend_zhang.user_repository import UserRepository
 
-# update_item 允许修改的字段；status 只能通过 remove / restore 改变
+# Fields allowed by update_item; status can only be changed via remove / restore.
 EDITABLE_FIELDS = ("name", "category", "price", "description", "image_path")
 
-# 归档文件名 / ID 计数器文件名（都放在 items.json 同目录）
+# Archive file name / ID counter file name (both live next to items.json).
 ARCHIVE_FILE_NAME = "items_deleted.json"
 META_FILE_NAME = "items_meta.json"
 
 
-# ---------- 内部函数 ----------
+# ---------- Internal helpers ----------
 def _full_view(item: dict) -> dict:
-    """完整商品信息（商品数据不含敏感字段，可直接给 GUI 使用）。"""
+    """Full item info (item data has no sensitive fields, safe to pass to the GUI)."""
     return {
         "id": item.get("id"),
         "seller_id": item.get("seller_id"),
@@ -44,7 +45,7 @@ def _full_view(item: dict) -> dict:
 
 
 def _public_view(item: dict) -> dict:
-    """最小公开信息，供收藏 / 留言 / 意向等模块使用。"""
+    """Minimal public info, for favorites / messages / intents modules."""
     return {
         "id": item.get("id"),
         "seller_id": item.get("seller_id"),
@@ -56,7 +57,7 @@ def _public_view(item: dict) -> dict:
 
 
 def _sort_key(field: str):
-    """排序键：时间按字符串（格式固定，可直接比较），价格按数值。"""
+    """Sort key: times as strings (fixed format, comparable directly), price as number."""
     if field == config.SORT_PRICE:
         def key(record: dict) -> float:
             try:
@@ -68,7 +69,8 @@ def _sort_key(field: str):
 
 
 class ItemService:
-    """商品业务逻辑。测试时传入独立的 data_file / user_repository 即可隔离数据。"""
+    """Item business logic. Pass an independent data_file / user_repository to
+    isolate data in tests."""
 
     def __init__(
         self,
@@ -78,20 +80,21 @@ class ItemService:
         meta_file: str | None = None,
     ):
         self.repository = ItemRepository(data_file)
-        # 只通过仓储查询用户是否存在，不直接读写 users.json
+        # Query user existence only via the repository, never read/write users.json directly.
         self.user_repository = user_repository or UserRepository()
-        # 已删商品的只读归档（v1.2）：未显式指定时放在 items.json 同目录，
-        # 这样测试传入临时目录时归档也一起隔离，不会写到正式数据目录。
+        # Read-only archive of deleted items (v1.2): placed next to items.json
+        # when not explicitly given, so tests passing a temp dir keep the archive
+        # isolated from the production data directory.
         sibling_dir = os.path.dirname(os.path.abspath(data_file)) if data_file else None
         if deleted_file is None and sibling_dir:
             deleted_file = os.path.join(sibling_dir, ARCHIVE_FILE_NAME)
         self.archive = ItemArchive(deleted_file)
-        # 商品 ID 计数器（v1.3）：同样默认与 items.json 同目录
+        # Item ID counter (v1.3): also defaults to the items.json directory.
         if meta_file is None and sibling_dir:
             meta_file = os.path.join(sibling_dir, META_FILE_NAME)
         self.id_sequence = ItemIdSequence(meta_file)
 
-    # ---------- 内部 ----------
+    # ---------- Internal ----------
     def _find_item_internal(self, item_id: int) -> dict | None:
         return self.repository.find_by_id(item_id)
 
@@ -99,10 +102,11 @@ class ItemService:
         return self.user_repository.exists(seller_id)
 
     def _allocate_item_id(self) -> int:
-        """商品 ID 发号（v1.3）：严格单调、删除后不复用。
+        """Allocate an item ID (v1.3): strictly monotonic, never reused after deletion.
 
-        下限 = max(现有最大 ID + 1, 归档最大 item_id + 1)，再与计数器取大，
-        所以即使 items_meta.json 丢失或被改小，也不会撞上现存或已删除的商品 ID。
+        The floor is max(max existing ID + 1, max archived item_id + 1), then the
+        max with the counter, so even if items_meta.json is lost or shrunk it will
+        not collide with existing or deleted item IDs.
         """
         floor = max(self.repository.max_id() + 1, self.archive.max_item_id() + 1, 1)
         return self.id_sequence.allocate(floor)
@@ -118,13 +122,13 @@ class ItemService:
         return sorted(records, key=_sort_key(sort_by), reverse=descending)
 
     def _prepare_query(self, include_removed: Any, sort_by: Any, descending: Any) -> tuple[bool, str, bool]:
-        """校验查询参数，失败时抛 ValidationError。"""
+        """Validate query parameters; raises ValidationError on failure."""
         removed = validators.validate_bool(include_removed, "include_removed")
         field, desc = validators.validate_sort(sort_by, descending)
         return removed, field, desc
 
     def _load_owned_item(self, item_id: Any, seller_id: Any) -> tuple[dict | None, dict | None]:
-        """校验 ID + 用户存在 + 商品存在 + 发布者匹配，返回 (item, 错误返回)。"""
+        """Validate ID + user existence + item existence + seller match; returns (item, error response)."""
         try:
             iid = validators.validate_item_id(item_id)
             sid = validators.validate_seller_id(seller_id)
@@ -133,18 +137,18 @@ class ItemService:
 
         try:
             if not self._seller_exists(sid):
-                return None, failure("用户不存在")
+                return None, failure("User does not exist")
             item = self._find_item_internal(iid)
         except BackendError as exc:
             return None, failure(exc.message)
 
         if item is None:
-            return None, failure("商品不存在")
+            return None, failure("Item does not exist")
         if item.get("seller_id") != sid:
-            return None, failure("无权操作该商品")
+            return None, failure("Permission denied for this item")
         return item, None
 
-    # ---------- 发布 ----------
+    # ---------- Publish ----------
     def create_item(
         self,
         seller_id: Any,
@@ -161,7 +165,7 @@ class ItemService:
 
         try:
             if not self._seller_exists(sid):
-                return failure("发布者用户不存在")
+                return failure("Seller user does not exist")
         except BackendError as exc:
             return failure(exc.message)
 
@@ -189,14 +193,14 @@ class ItemService:
         try:
             new_id = self._allocate_item_id()
         except BackendError as exc:
-            return failure(f"商品发布失败：商品 ID 发放失败（{exc.message}）")
+            return failure(f"Failed to publish item: could not allocate item ID ({exc.message})")
         try:
             saved = self.repository.create(record, new_id)
         except BackendError as exc:
             return failure(exc.message)
-        return success(_full_view(saved), "商品发布成功")
+        return success(_full_view(saved), "Item published successfully")
 
-    # ---------- 查询 ----------
+    # ---------- Query ----------
     def get_all_items(
         self,
         include_removed: Any = False,
@@ -213,7 +217,7 @@ class ItemService:
 
         records = self._filter_by_status(records, removed)
         records = self._sort_records(records, field, desc)
-        return success([_full_view(item) for item in records], "商品查询成功")
+        return success([_full_view(item) for item in records], "Items retrieved successfully")
 
     def get_item_by_id(self, item_id: Any, include_removed: Any = False) -> dict:
         try:
@@ -226,10 +230,10 @@ class ItemService:
             return failure(exc.message)
 
         if item is None:
-            return failure("商品不存在")
+            return failure("Item does not exist")
         if item.get("status") != config.STATUS_ON_SALE and not removed:
-            return failure("商品不存在或已下架")
-        return success(_full_view(item), "商品查询成功")
+            return failure("Item does not exist or is off sale")
+        return success(_full_view(item), "Item retrieved successfully")
 
     def get_items_by_seller(
         self,
@@ -249,7 +253,7 @@ class ItemService:
 
         records = self._filter_by_status(records, removed)
         records = self._sort_records(records, field, desc)
-        return success([_full_view(item) for item in records], "商品查询成功")
+        return success([_full_view(item) for item in records], "Items retrieved successfully")
 
     def search_items(
         self,
@@ -259,7 +263,7 @@ class ItemService:
         sort_by: Any = config.SORT_CREATED_AT,
         descending: Any = True,
     ) -> dict:
-        """关键词（名称或描述，不区分大小写）+ 分类组合搜索，然后排序。"""
+        """Combined keyword (name or description, case-insensitive) + category search, then sort."""
         try:
             text = validators.normalize_keyword(keyword)
             category_filter = validators.normalize_category_filter(category)
@@ -282,15 +286,15 @@ class ItemService:
                 or needle in str(item.get("description", "")).lower()
             ]
         records = self._sort_records(records, field, desc)
-        return success([_full_view(item) for item in records], "商品搜索成功")
+        return success([_full_view(item) for item in records], "Items searched successfully")
 
-    # ---------- 编辑 / 状态流转 ----------
+    # ---------- Edit / status transitions ----------
     def update_item(self, item_id: Any, seller_id: Any, updated_data: Any) -> dict:
         item, error = self._load_owned_item(item_id, seller_id)
         if error is not None:
             return error
         if not isinstance(updated_data, dict):
-            return failure("updated_data 必须是字典")
+            return failure("updated_data must be a dictionary")
 
         changes: dict[str, Any] = {}
         try:
@@ -308,24 +312,24 @@ class ItemService:
             return failure(exc.message)
 
         if not changes:
-            return failure("未提供可修改的字段（仅支持 " + "、".join(EDITABLE_FIELDS) + "）")
+            return failure("No editable fields provided (only " + ", ".join(EDITABLE_FIELDS) + " are allowed)")
 
-        changes["updated_at"] = now_text()  # created_at 保持不变
+        changes["updated_at"] = now_text()  # created_at stays unchanged.
         try:
             updated = self.repository.update(item["id"], changes)
         except BackendError as exc:
             return failure(exc.message)
         if updated is None:
-            return failure("商品不存在")
-        return success(_full_view(updated), "商品修改成功")
+            return failure("Item does not exist")
+        return success(_full_view(updated), "Item updated successfully")
 
     def remove_item(self, item_id: Any, seller_id: Any) -> dict:
-        """下架（在售 -> 已下架）。"""
+        """Take off sale (on sale -> off sale)."""
         item, error = self._load_owned_item(item_id, seller_id)
         if error is not None:
             return error
         if item.get("status") != config.STATUS_ON_SALE:
-            return failure("商品已下架，无法重复下架")
+            return failure("Item is already off sale")
 
         try:
             updated = self.repository.update(
@@ -335,16 +339,16 @@ class ItemService:
         except BackendError as exc:
             return failure(exc.message)
         if updated is None:
-            return failure("商品不存在")
-        return success(_full_view(updated), "商品已下架")
+            return failure("Item does not exist")
+        return success(_full_view(updated), "Item taken off sale")
 
     def restore_item(self, item_id: Any, seller_id: Any) -> dict:
-        """重新上架（已下架 -> 在售）。"""
+        """Relist (off sale -> on sale)."""
         item, error = self._load_owned_item(item_id, seller_id)
         if error is not None:
             return error
         if item.get("status") != config.STATUS_OFF_SALE:
-            return failure("商品在售中，无需重新上架")
+            return failure("Item is already on sale")
 
         try:
             updated = self.repository.update(
@@ -354,15 +358,18 @@ class ItemService:
         except BackendError as exc:
             return failure(exc.message)
         if updated is None:
-            return failure("商品不存在")
-        return success(_full_view(updated), "商品已重新上架")
+            return failure("Item does not exist")
+        return success(_full_view(updated), "Item relisted")
 
     def delete_item_permanently(self, item_id: Any, seller_id: Any) -> dict:
-        """彻底删除。不要求先下架；只移除 items.json 记录，不动其他模块数据。
+        """Permanently delete. Does not require taking off sale first; only removes
+        the items.json record and leaves other modules' data untouched.
 
-        v1.2：删除前后端会先把商品快照写入 items_deleted.json（只存不读回，
-        无任何接口能据此恢复商品），供收藏/留言/意向等模块显示"商品已删除"。
-        归档写失败时**不执行删除**，避免出现"商品没了但查不到删除记录"的情况。
+        v1.2: before deletion the backend writes a snapshot into items_deleted.json
+        (write-only, never read back; no interface can restore an item from it), so
+        favorites/messages/intents modules can show "item deleted". If the archive
+        write fails, deletion is **not** performed, avoiding the situation where the
+        item is gone but no deletion record can be found.
         """
         item, error = self._load_owned_item(item_id, seller_id)
         if error is not None:
@@ -371,12 +378,12 @@ class ItemService:
         try:
             self.archive.append(item, item["seller_id"])
         except BackendError as exc:
-            return failure(f"商品未删除：删除记录归档写入失败（{exc.message}）")
+            return failure(f"Item not deleted: failed to write deletion archive ({exc.message})")
 
         try:
             deleted = self.repository.delete(item["id"])
         except BackendError as exc:
-            # 删除失败则回滚刚写入的归档，避免留下"已删除"的假记录
+            # Roll back the archive just written so no fake "deleted" record remains.
             try:
                 self.archive.discard_latest(item["id"])
             except BackendError:
@@ -387,10 +394,10 @@ class ItemService:
                 self.archive.discard_latest(item["id"])
             except BackendError:
                 pass
-            return failure("商品不存在")
-        return success({"id": item["id"]}, "商品已彻底删除")
+            return failure("Item does not exist")
+        return success({"id": item["id"]}, "Item permanently deleted")
 
-    # ---------- 辅助查询接口（供其他模块调用） ----------
+    # ---------- Helper query interfaces (for other modules) ----------
     def item_exists(self, item_id: Any, include_removed: Any = True) -> dict:
         try:
             iid = validators.validate_item_id(item_id)
@@ -402,15 +409,16 @@ class ItemService:
             return failure(exc.message)
 
         if item is None:
-            return success(False, "商品不存在")
+            return success(False, "Item does not exist")
         if not removed and item.get("status") != config.STATUS_ON_SALE:
-            return success(False, "商品已下架")
-        return success(True, "查询成功")
+            return success(False, "Item is off sale")
+        return success(True, "Query successful")
 
     def is_item_active(self, item_id: Any) -> dict:
-        """收藏/留言/意向模块加载关联数据时的前置判断：商品存在且处于在售状态。
+        """Pre-check for favorites/messages/intents when loading related data: the
+        item exists and is on sale.
 
-        v1.1 新增的只读接口，不改变任何既有接口语义。
+        Read-only interface added in v1.1; does not change any existing semantics.
         """
         try:
             iid = validators.validate_item_id(item_id)
@@ -421,10 +429,10 @@ class ItemService:
             return failure(exc.message)
 
         if item is None:
-            return success(False, "商品已删除")
+            return success(False, "Item has been deleted")
         if item.get("status") != config.STATUS_ON_SALE:
-            return success(False, "商品已下架")
-        return success(True, "商品在售中")
+            return success(False, "Item is off sale")
+        return success(True, "Item is on sale")
 
     def get_item_status(self, item_id: Any) -> dict:
         try:
@@ -436,8 +444,8 @@ class ItemService:
             return failure(exc.message)
 
         if item is None:
-            return failure("商品不存在")
-        return success(item.get("status"), "查询成功")
+            return failure("Item does not exist")
+        return success(item.get("status"), "Query successful")
 
     def get_public_item_info(self, item_id: Any) -> dict:
         try:
@@ -449,17 +457,18 @@ class ItemService:
             return failure(exc.message)
 
         if item is None:
-            return failure("商品不存在")
-        return success(_public_view(item), "商品信息查询成功")
+            return failure("Item does not exist")
+        return success(_public_view(item), "Item info retrieved successfully")
 
-    # ---------- 已删商品归档（v1.2，只读） ----------
+    # ---------- Deleted item archive (v1.2, read-only) ----------
     def is_item_deleted(self, item_id: Any) -> dict:
-        """该商品 ID 是否已被彻底删除（历史记录展示用，只读）。
+        """Whether this item ID has been permanently deleted (read-only, for history display).
 
-        返回 data 固定包含 7 个字段：
-        `{item_id, deleted, alive, seller_id, name, status_before_delete, deleted_at}`
-        - deleted=True 表示存在删除归档；
-        - alive=True 表示该 ID 当前仍有商品（ID 被新商品复用时会出现 deleted 与 alive 同时为 True）。
+        ``data`` always contains 7 fields:
+        ``{item_id, deleted, alive, seller_id, name, status_before_delete, deleted_at}``
+        - deleted=True means a deletion archive exists;
+        - alive=True means this ID still has a live item (when the ID has been
+          reused by a new item, deleted and alive can both be True).
         """
         try:
             iid = validators.validate_item_id(item_id)
@@ -480,25 +489,25 @@ class ItemService:
             "deleted_at": record.get("deleted_at") if record else None,
         }
         if record is None:
-            return success(data, "无该商品的删除记录")
+            return success(data, "No deletion record for this item")
         if alive:
-            return success(data, "该 ID 曾有商品被删除，但已被新商品重新使用")
-        return success(data, "商品已彻底删除")
+            return success(data, "This ID once had a deleted item, but it has been reused by a new item")
+        return success(data, "Item permanently deleted")
 
     def list_deleted_items(self, limit: Any = 50) -> dict:
-        """按删除时间倒序返回归档快照列表（只读，供报告与后台追溯）。"""
+        """Return archive snapshots in reverse deletion-time order (read-only, for reports and auditing)."""
         if isinstance(limit, bool) or not isinstance(limit, int):
-            return failure("limit 必须是整数")
+            return failure("limit must be an integer")
         if limit < 1 or limit > 500:
-            return failure("limit 必须在 1-500 之间")
+            return failure("limit must be between 1 and 500")
         try:
             records = self.archive.list_records(limit)
         except BackendError as exc:
             return failure(exc.message)
-        return success(records, "已删除商品查询成功")
+        return success(records, "Deleted items retrieved successfully")
 
 
-# ---------- 模块级公开接口（GUI 与其他模块调用这些函数） ----------
+# ---------- Module-level public interface (GUI and other modules call these) ----------
 _default_service: ItemService | None = None
 
 
@@ -515,7 +524,7 @@ def reset_item_service(
     deleted_file: str | None = None,
     meta_file: str | None = None,
 ) -> ItemService:
-    """切换默认服务的数据文件（测试与演示使用）。"""
+    """Switch the default service's data files (for tests and demos)."""
     global _default_service
     _default_service = ItemService(data_file, user_repository, deleted_file, meta_file)
     return _default_service
@@ -584,7 +593,8 @@ def item_exists(item_id: Any, include_removed: Any = True) -> dict:
 
 
 def is_item_active(item_id: Any) -> dict:
-    """商品是否可交易（存在且状态为在售）。供收藏/留言/意向模块前置判断。"""
+    """Whether the item is tradeable (exists and on sale). Used as a pre-check by
+    favorites/messages/intents modules."""
     return get_item_service().is_item_active(item_id)
 
 
@@ -597,10 +607,11 @@ def get_public_item_info(item_id: Any) -> dict:
 
 
 def is_item_deleted(item_id: Any) -> dict:
-    """该商品是否已被彻底删除（历史记录/收藏列表展示"商品已删除"用）。v1.2 新增。"""
+    """Whether the item has been permanently deleted (for showing "item deleted" in
+    history/favorites lists). Added in v1.2."""
     return get_item_service().is_item_deleted(item_id)
 
 
 def list_deleted_items(limit: Any = 50) -> dict:
-    """已删商品归档列表（按删除时间倒序）。v1.2 新增，只读。"""
+    """Deleted item archive list (reverse deletion-time order). Added in v1.2, read-only."""
     return get_item_service().list_deleted_items(limit)

@@ -1,14 +1,15 @@
-"""后端异常类型。
+"""Backend exception types.
 
-服务层捕获这些异常并转换成统一的 {"success": False, "message": ...} 返回格式，
-保证 JSON 文件异常、参数错误等情况不会让程序直接崩溃。
+The service layer catches these exceptions and converts them into the unified
+``{"success": False, "message": ...}`` response format, so that JSON file
+errors, invalid arguments, etc. never crash the program.
 """
 
 
 class BackendError(Exception):
-    """后端异常基类，message 是可以直接展示给用户的提示。"""
+    """Base backend exception; ``message`` is a user-facing hint."""
 
-    default_message = "操作失败"
+    default_message = "Operation failed"
 
     def __init__(self, message: str | None = None):
         self.message = message or self.default_message
@@ -16,30 +17,30 @@ class BackendError(Exception):
 
 
 class ValidationError(BackendError):
-    """字段校验不通过（用户名、密码、价格、分类等）。"""
+    """Field validation failed (username, password, price, category, etc.)."""
 
-    default_message = "参数校验失败"
+    default_message = "Validation failed"
 
 
 class NotFoundError(BackendError):
-    """用户或商品不存在。"""
+    """User or item does not exist."""
 
-    default_message = "记录不存在"
+    default_message = "Record not found"
 
 
 class PermissionDeniedError(BackendError):
-    """越权操作（非发布者编辑/下架/删除商品等）。"""
+    """Unauthorized operation (a non-seller editing/removing/deleting an item, etc.)."""
 
-    default_message = "无权操作该商品"
+    default_message = "Permission denied for this item"
 
 
 class ConflictError(BackendError):
-    """数据冲突（用户名重复、状态不允许该操作等）。"""
+    """Data conflict (duplicate username, status forbids the operation, etc.)."""
 
-    default_message = "数据冲突"
+    default_message = "Data conflict"
 
 
 class DataFileError(BackendError):
-    """JSON 数据文件读写异常（文件损坏、无权限、磁盘错误等）。"""
+    """JSON data file read/write error (corrupt file, no permission, disk error, etc.)."""
 
-    default_message = "数据文件读写失败"
+    default_message = "Data file read/write failed"

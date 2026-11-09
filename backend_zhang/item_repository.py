@@ -1,6 +1,8 @@
-"""商品数据访问层（items.json 只由本包维护，其他模块不得直接打开）。
+"""Item data access layer (items.json is maintained only by this package; other
+modules must not open it directly).
 
-只做数据读写，状态流转、权限判断、搜索排序全部放在 item_service。
+Only reads/writes data; status transitions, permission checks, search and sort
+all live in item_service.
 """
 
 from __future__ import annotations
@@ -18,14 +20,14 @@ class ItemRepository:
     def data_file(self) -> str:
         return self.store.path
 
-    # ---------- 内部读写 ----------
+    # ---------- Internal read/write ----------
     def _load_items(self) -> list[dict]:
         return self.store.load()
 
     def _save_items(self, items: list[dict]) -> None:
         self.store.save(items)
 
-    # ---------- 查询 ----------
+    # ---------- Query ----------
     def list_items(self) -> list[dict]:
         return [dict(item) for item in self._load_items()]
 
@@ -44,20 +46,21 @@ class ItemRepository:
     def count(self) -> int:
         return len(self._load_items())
 
-    # ---------- 写入 ----------
+    # ---------- Write ----------
     def create(self, record: dict, item_id: int | None = None) -> dict:
-        """新增商品。
+        """Create an item.
 
-        item_id 由服务层从 ID 计数器（items_meta.json）取得，保证严格单调、
-        删除后不复用；不传则退化为「现有最大 ID + 1」。
+        ``item_id`` is obtained by the service layer from the ID counter
+        (items_meta.json) to stay strictly monotonic and never reused after
+        deletion; if omitted, it falls back to "max existing ID + 1".
         """
         payload = dict(record)
 
         def mutator(items: list[dict]) -> dict:
             new_id = item_id if item_id is not None else self._next_id(items)
             if any(item.get("id") == new_id for item in items):
-                raise ConflictError(f"商品 ID {new_id} 已被占用，请重试")
-            # id 放最前，保证 items.json 的字段顺序与文档一致
+                raise ConflictError(f"Item ID {new_id} is already in use, please retry")
+            # Put id first so the field order in items.json matches the document.
             record = {"id": new_id, **payload}
             items.append(record)
             return dict(record)
@@ -65,7 +68,7 @@ class ItemRepository:
         return self.store.transaction(mutator)
 
     def update(self, item_id: int, changes: dict) -> dict | None:
-        """按 ID 更新字段，返回更新后的记录；商品不存在返回 None。"""
+        """Update fields by ID, returning the updated record; None if not found."""
         def mutator(items: list[dict]) -> dict | None:
             for item in items:
                 if item.get("id") == item_id:
@@ -76,7 +79,8 @@ class ItemRepository:
         return self.store.transaction(mutator)
 
     def delete(self, item_id: int) -> bool:
-        """彻底删除（只在 items.json 内移除记录，不触碰其他模块文件）。"""
+        """Permanently delete (removes the record only from items.json, never
+        touching other modules' files)."""
         def mutator(items: list[dict]) -> bool:
             for index, item in enumerate(items):
                 if item.get("id") == item_id:
@@ -86,9 +90,9 @@ class ItemRepository:
 
         return self.store.transaction(mutator)
 
-    # ---------- 主键 ----------
+    # ---------- Primary key ----------
     def max_id(self) -> int:
-        """当前 items.json 里的最大商品 ID（没有商品返回 0）。"""
+        """Largest item ID currently in items.json (0 if empty)."""
         return self._next_id(self._load_items()) - 1
 
     @staticmethod

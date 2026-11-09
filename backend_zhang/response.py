@@ -1,20 +1,21 @@
-"""统一返回格式构造器。
+"""Unified response format builders.
 
-所有对外公开接口都必须返回：
+Every public interface must return:
     {"success": bool, "message": str, "data": Any}
 
-data 一律返回深拷贝，避免调用方（GUI / 其他模块）拿到内部对象后直接改数据。
+``data`` is always a deep copy, so callers (GUI / other modules) cannot mutate
+internal objects directly.
 """
 
 from copy import deepcopy
 from typing import Any
 
 
-def success(data: Any = None, message: str = "操作成功") -> dict:
-    """构造成功返回。"""
+def success(data: Any = None, message: str = "Success") -> dict:
+    """Build a success response."""
     return {"success": True, "message": str(message), "data": deepcopy(data)}
 
 
 def failure(message: str, data: Any = None) -> dict:
-    """构造失败返回。"""
+    """Build a failure response."""
     return {"success": False, "message": str(message), "data": deepcopy(data)}
