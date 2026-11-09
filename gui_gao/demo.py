@@ -26,5 +26,17 @@ def create_demo(directory):
         gateway.login(users[user_index][0], DEMO_PASSWORD)
         gateway.save_item(dict(name=name, category=category, price=price,
                           description=description, image_path=str(assets / f"{asset}.png")))
+    gateway.login("lin_demo", DEMO_PASSWORD)
+    gateway.features.toggle_favorite(1)
+    gateway.features.add_message(1, "这本书适合没有基础的同学吗？")
+    gateway.features.create_intention(1)
+    gateway.login(DEMO_USERNAME, DEMO_PASSWORD)
+    gateway.features.add_message(1, "适合的，包含基础语法和练习，可以先看看目录。")
+    gateway.features.toggle_favorite(2)
+    gateway.features.toggle_favorite(3)
+    gateway.features.add_message(2, "键盘可以连接 Mac 吗？")
+    gateway.features.create_intention(2)
+    gateway.login("lin_demo", DEMO_PASSWORD)
+    gateway.features.add_message(2, "可以，蓝牙连接正常。")
     gateway.logout()
     return gateway

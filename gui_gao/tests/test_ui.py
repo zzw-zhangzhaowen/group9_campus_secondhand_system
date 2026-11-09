@@ -14,7 +14,8 @@ from unittest.mock import patch
 
 from gui_gao.app import CampusApp
 from gui_gao.gateway import Gateway
-from gui_gao.widgets import ItemImage, image_path
+from gui_gao.widgets import ItemImage, MarketHero, image_path
+from gui_gao.page_design import PageBanner
 
 
 class TkFlowTests(unittest.TestCase):
@@ -72,6 +73,30 @@ class TkFlowTests(unittest.TestCase):
         self.assertEqual(page.fields["password"].get(), "")
         self.assertIsNone(self.gateway.user)
         self.login()
+
+    def test_login_reveal_cleanup_and_minimum_layout(self):
+        self.root.geometry('1000x700')
+        self.root.deiconify()
+        self.root.update_idletasks()
+        page = self.app.page
+        self.assertLessEqual(page.body.winfo_reqwidth(), page.canvas.winfo_width()+2)
+        page.fields['username'].set('student_a')
+        page.fields['password'].set('Wrong123')
+        page.toggle_password()
+        self.assertEqual(page.fields['password'].input.cget('show'), '')
+        page.submit()
+        self.wait()
+        self.assertEqual(page.fields['password'].get(), '')
+        self.assertFalse(page.password_visible)
+        self.assertTrue(page.fields['password'].input.cget('show'))
+        page.artwork.animate(-5)
+        self.app.show('register')
+        self.wait()
+        page = self.app.page
+        page.toggle_password()
+        self.assertEqual(page.fields['confirm'].input.cget('show'), '')
+        self.root.update_idletasks()
+        self.assertLessEqual(page.body.winfo_reqwidth(), page.canvas.winfo_width()+2)
 
     def test_registration_page_and_success(self):
         self.app.show("register")
@@ -176,6 +201,40 @@ class TkFlowTests(unittest.TestCase):
         self.assertTrue(finalized_on)
         self.assertEqual(set(finalized_on), {threading.get_ident()})
 
+    def test_interactions_submit_and_navigation(self):
+        self.login()
+        self.gateway.register("other_user", "Campus123", "其他同学")
+        self.gateway.login("other_user", "Campus123")
+        item = self.gateway.save_item(dict(name="键盘", category="电子产品", price="88", description="蓝牙正常", image_path=""))
+        self.gateway.login("student_a", "Campus123")
+        self.app.show("detail", item_id=item['id'])
+        self.wait()
+        page = self.app.page
+        page.favorite()
+        self.wait()
+        self.assertTrue(page.favorited)
+        page.messages_panel.composer.set("请问还在吗？")
+        with patch("gui_gao.app.messagebox.askyesno", return_value=False):
+            self.app.show("home")
+        self.assertEqual(self.app.route, "detail")
+        page.messages_panel.send()
+        self.wait()
+        self.assertFalse(page.is_dirty())
+        with patch("gui_gao.item_page.messagebox.askyesno", return_value=True):
+            page.intention()
+        self.wait()
+        self.assertTrue(page.intended)
+        self.root.geometry("1000x700")
+        self.root.deiconify()
+        for kind in ["favorites", "messages", "intentions", "logs"]:
+            self.app.show("interactions", kind=kind)
+            self.wait()
+            self.assertTrue(self.app.page.records, kind)
+            self.assertLessEqual(self.app.page.body.winfo_reqwidth(), self.app.page.canvas.winfo_width()+2, kind)
+        self.app.show("interactions", kind="messages", item_id=item['id'])
+        self.wait()
+        self.assertIsNotNone(self.app.page.panel)
+
     def test_missing_and_corrupt_image_fallback(self):
         for value in ["", str(Path(self.temp.name)/"missing.png")]:
             image = ItemImage(self.root, value)
@@ -187,6 +246,160 @@ class TkFlowTests(unittest.TestCase):
         image = ItemImage(self.root, str(file))
         self.assertIsNone(image.photo)
         image.destroy()
+
+    def test_live_preview_and_prompts_preserve_existing_text(self):
+        self.login()
+        self.app.show('publish')
+        self.wait()
+        page = self.app.page
+        page.fields['name'].set('台灯')
+        page.fields['price'].set('25')
+        page.fields['description'].set('原有内容')
+        page.add_prompt('附带配件：')
+        self.root.update()
+        self.assertEqual(page.fields['description'].get(), '原有内容\n附带配件：')
+        self.assertEqual(page.live_name.cget('text'), '台灯')
+        self.assertEqual(page.live_price.cget('text'), '¥ 25')
+        self.assertEqual(float(page.progress['value']), 4)
+        page.fields['description'].set('字' * 198)
+        page.add_prompt('附带配件：')
+        self.assertEqual(len(page.fields['description'].get()), 198)
+        self.assertTrue(page.fields['description'].error.cget('text'))
+        page.fields['description'].set('一盏台灯')
+        page.submit()
+        self.wait()
+        panel = self.app.page.messages_panel
+        panel.composer.set('原问题')
+        panel.add_prompt('配件是否齐全？')
+        self.assertEqual(panel.composer.get(), '原问题\n配件是否齐全？')
+        panel.composer.set('')
+
+    def test_account_counts_motion_and_banner_cleanup(self):
+        self.login()
+        self.app.show('account')
+        self.wait()
+        page = self.app.page
+        self.assertEqual([w.cget('text') for w in page.stats.values], ['00','00','00'])
+        page.nickname.set('新昵称')
+        self.assertEqual(page.name_preview.cget('text'), '新昵称')
+        page.nickname.set(page.original_nickname)
+        page.toggle_motion()
+        page.banner.animate(-5)
+        self.assertIsNone(page.banner.job)
+        self.assertEqual(page.banner.offset, 0)
+        page.toggle_motion()
+        page.banner.animate(-5)
+        self.app.show('home')
+        self.wait()
+
+    def test_scene_switch_and_self_check_do_not_change_business_data(self):
+        self.app.page.toggle_light()
+        self.assertTrue(self.app.page.artwork.lit)
+        self.app.page.toggle_light()
+        self.assertFalse(self.app.page.artwork.lit)
+        self.login()
+        self.app.show('publish')
+        self.wait()
+        page = self.app.page
+        for v in page.photo_check.values:
+            v.set(True)
+        page.photo_check.update_count()
+        self.assertEqual(page.photo_check.summary.cget('text'), '3 / 3 已确认')
+        self.assertFalse(page.is_dirty())
+        self.assertEqual(self.gateway.mine(), [])
+
+    def test_route_and_clock_motion_pause_reduce_and_cleanup(self):
+        self.login()
+        self.root.deiconify()
+        for kind in ('intentions', 'logs'):
+            self.app.show('interactions', kind=kind)
+            self.wait()
+            banner = next(w for w in self.app.page.body.winfo_children() if isinstance(w, PageBanner))
+            art = banner.art
+            self.assertIsNotNone(art.job)
+            banner.toggle_animation()
+            self.assertIsNone(art.job)
+            self.assertTrue(art.motion_paused)
+            tag = 'pin-hole' if kind == 'intentions' else 'clock-hour'
+            snapshots = []
+            for elapsed in (0, 2.5, 4.5):
+                art._draw_motion(elapsed)
+                snapshots.append(art.coords(tag))
+            if kind == 'intentions':
+                self.assertLess(snapshots[0][0], snapshots[1][0])
+                self.assertLess(snapshots[1][0], snapshots[2][0])
+                self.assertLess(snapshots[1][1], snapshots[0][1])
+            else:
+                self.assertEqual(snapshots[0], snapshots[1])  # Hour holds until its tick.
+                self.assertNotEqual(snapshots[1], snapshots[2])
+                self.assertEqual(snapshots[0][:2], snapshots[2][:2])  # Pivot stays fixed.
+            banner.toggle_animation()
+            self.assertIsNotNone(art.job)
+            self.app.show('home')
+            self.wait()
+            self.assertIsNone(art.job)
+        self.app.reduce_motion = True
+        self.app.show('interactions', kind='logs')
+        self.wait()
+        banner = next(w for w in self.app.page.body.winfo_children() if isinstance(w, PageBanner))
+        self.assertIsNone(banner.art.job)
+        self.assertEqual(banner.motion_control.cget('state'), 'disabled')
+
+    def test_view_filters_keep_records_and_leave_no_callbacks(self):
+        self.login()
+        self.app.show('interactions', kind='favorites')
+        self.wait()
+        page = self.app.page
+        page.loaded([{'id': 999, 'name':'下架的物品', 'price':10, 'status':'已下架',
+                      'seller_id':self.gateway.user_id(), 'image_path':''}])
+        page.available.set(True)
+        page.filter_favorites()
+        self.assertEqual(len(page.records), 1)
+        page.available.set(False)
+        page.filter_favorites()
+        self.app.show('interactions', kind='logs')
+        self.wait()
+        page = self.app.page
+        page.loaded([{'action_type':'收藏', 'detail':'测试物品', 'timestamp':'示例'}])
+        page.log_query.set('不匹配')
+        page.render()
+        self.assertEqual(len(page.records), 1)
+        page.log_query.set('收藏')
+        page.render()
+        self.app.show('account')
+        self.wait()
+        self.app.page.banner.animate(-7)
+        self.app.show('home')
+        self.wait()
+
+    def test_image_zoom_limits_reset_and_close(self):
+        self.login()
+        asset = Path(__file__).resolve().parents[1]/'assets'/'book.png'
+        item = self.gateway.save_item(dict(name='图书', category='书籍', price='30',
+                                          description='图片缩放检查', image_path=str(asset)))
+        self.app.show('detail', item_id=item['id'])
+        self.wait()
+        self.app.page.zoom_image()
+        self.root.update()
+        window = next(w for w in self.root.winfo_children() if isinstance(w, tk.Toplevel))
+        def descendants(widget):
+            for child in widget.winfo_children():
+                yield child
+                yield from descendants(child)
+        buttons = {w.cget('text'): w for w in descendants(window)
+                   if w.winfo_class() in ('TButton', 'Button')}
+        canvas = next(w for w in window.winfo_children() if isinstance(w, tk.Canvas))
+        initial_width = canvas.photo.width()
+        self.assertTrue(buttons['− 缩小'].instate(['disabled']))
+        buttons['＋ 放大'].invoke()
+        buttons['＋ 放大'].invoke()
+        self.assertEqual(canvas.photo.width(), initial_width * 3)
+        self.assertTrue(buttons['＋ 放大'].instate(['disabled']))
+        buttons['复位'].invoke()
+        self.assertEqual(canvas.photo.width(), initial_width)
+        buttons['关闭预览'].invoke()
+        self.root.update()
+        self.assertFalse(window.winfo_exists())
 
     def test_native_png_demo_asset_preview(self):
         asset = Path(__file__).resolve().parents[1]/"assets"/"book.png"
@@ -210,6 +423,12 @@ class TkFlowTests(unittest.TestCase):
             with self.subTest(route=route):
                 self.assertLessEqual(self.app.page.body.winfo_reqwidth(),
                                      self.app.page.canvas.winfo_width()+2)
+                if route == 'home':
+                    hero = next(w for w in self.app.page.body.winfo_children() if isinstance(w, MarketHero))
+                    copy = hero.winfo_children()[0]
+                    action = copy.winfo_children()[-1]
+                    self.assertGreaterEqual(action.winfo_height(), action.winfo_reqheight())
+                    self.assertLessEqual(action.winfo_y()+action.winfo_height(), copy.winfo_height())
 
 
 if __name__ == "__main__":

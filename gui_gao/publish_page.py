@@ -3,6 +3,7 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, filedialog
 from . import theme as t
+from .page_design import PageBanner, note_card, LocalChecklist
 from .gateway import UserError
 from .validation import CATEGORIES, item_errors
 from .widgets import ScrollPage, Field, ItemImage, field_errors, page_title, empty_state, image_path
@@ -16,7 +17,9 @@ class PublishPage(ScrollPage):
         self.original = None
         self.path = ""
         self.image_changed = False
-        page_title(self.body, "编辑商品" if item_id else "发布一件闲置", "写清楚商品状况，让同学更容易找到合适的好物。")
+        PageBanner(self.body, app, 'START A NEW CHAPTER / 闲置新生',
+            '为好物补充一些细节。' if item_id else '下一段故事，从这里开始。',
+            '边填写，边预览。清楚的照片和真实描述，让沟通更轻松。', 'bag').pack(fill='x', pady=(0, 20))
         self.area = ttk.Frame(self.body)
         self.area.pack(fill="both", expand=True, pady=(10,0))
 
@@ -58,6 +61,15 @@ class PublishPage(ScrollPage):
                 color=t.MUTED, size=10, wraplength=350, justify="left").pack(anchor="w")
         self.image_error = t.label(left, "", color=t.RED, size=10, wraplength=350, justify="left")
         self.image_error.pack(anchor="w", pady=10)
+        self.live_name = t.label(left, '', bold=True, size=17, wraplength=340, justify='left')
+        self.live_name.pack(anchor='w', pady=(8, 6))
+        self.live_price = t.label(left, '', size=25, color=t.BLUE, bold=True)
+        self.live_price.pack(anchor='w')
+        self.readiness = t.label(left, '', color=t.MUTED, size=11)
+        self.readiness.pack(anchor='w', pady=(20, 8))
+        self.progress = ttk.Progressbar(left, maximum=4)
+        self.progress.pack(fill='x')
+        note_card(left, '给下一位主人多一点了解', '01  说明商品的新旧程度。\n02  列清楚一起附送的配件。\n03  如实描述磨损或需要留意的细节。').pack(fill='x', pady=20)
         right = ttk.Frame(self.area)
         right.grid(row=0, column=1, sticky="nsew")
         self.fields = {
@@ -75,7 +87,38 @@ class PublishPage(ScrollPage):
         buttons.pack(fill="x", pady=10)
         t.button(buttons, "保存修改" if self.item_id else "发布商品", self.submit, "primary").pack(side="right")
         t.button(buttons, "取消", lambda: self.app.show("mine" if self.item_id else "home")).pack(side="right", padx=12)
+        chips = ttk.Frame(right)
+        chips.pack(fill='x', pady=(6, 12))
+        for text in ['使用情况：', '附带配件：', '需要留意：']:
+            t.button(chips, text[:-1]+' +', lambda v=text: self.add_prompt(v), 'nav').pack(side='left', padx=(0, 5))
+        for field in self.fields.values():
+            field.observe(self.update_preview)
+        self.update_preview()
+        self.photo_check = LocalChecklist(left, '让照片替好物说话。', [
+            '拍到物品整体，背景尽量简单', '补充使用痕迹和配件说明', '确认照片与实际商品一致'])
+        self.photo_check.pack(fill='x', pady=16)
         self.original = self.values()
+
+    def update_preview(self):
+        if not self.fields:
+            return
+        values = self.values()
+        errors = item_errors(values)
+        count = sum(key not in errors for key in ('name', 'category', 'price', 'description'))
+        self.progress['value'] = count
+        self.readiness.configure(text=f'信息准备度  {count} / 4  ·  图片选填')
+        self.live_name.configure(text=values['name'].strip() or '你的好物名称')
+        self.live_price.configure(text='¥ '+(values['price'].strip() or '—'))
+
+    def add_prompt(self, text):
+        current = self.fields['description'].get()
+        updated = current + ('\n' if current else '') + text
+        if len(updated) > 200:
+            self.fields['description'].show_error('描述最多 200 字，请先精简内容。')
+            return
+        self.fields['description'].set(updated)
+        self.fields['description'].input.focus_set()
+        self.update_preview()
 
     def values(self):
         return {**{key: field.get() for key, field in self.fields.items()}, "image_path": self.path}
@@ -89,7 +132,7 @@ class PublishPage(ScrollPage):
     def refresh_image(self):
         for child in self.preview.winfo_children():
             child.destroy()
-        self.picture = ItemImage(self.preview, self.path, width=350, height=300)
+        self.picture = ItemImage(self.preview, self.path, width=330, height=235)
         self.picture.pack(fill="x")
 
     def choose_image(self):

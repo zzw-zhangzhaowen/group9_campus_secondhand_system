@@ -1,16 +1,17 @@
-"""Approved blue/white visual tokens, using native Tk/ttk only."""
+"""Approved B market visual tokens, using native Tk/ttk only."""
 import tkinter as tk
 from tkinter import ttk, font
 
-BLUE = "#2855C7"
-INK = "#172C50"
-MUTED = "#64728B"
-BG = "#F4F7FC"
-LINE = "#DBE2ED"
-PALE = "#EAF0FF"
+BLUE = "#1549DF"
+INK = "#142244"
+MUTED = "#6E7689"
+BG = "#F5F7FC"
+LINE = "#E0E5EF"
+PALE = "#EDF2FF"
 RED = "#B43838"
 GREEN = "#19714E"
 WHITE = "#FFFFFF"
+LIME = "#DFFA75"
 FAMILY = "TkDefaultFont"
 
 
@@ -23,7 +24,7 @@ def setup(root):
         font.nametofont(name).configure(family=FAMILY, size=12)
     style = ttk.Style(root)
     style.theme_use("clam")
-    style.configure("TFrame", background=WHITE)
+    style.configure("TFrame", background=WHITE, bordercolor=LINE, lightcolor=LINE, darkcolor=LINE)
     style.configure("TLabel", background=WHITE, foreground=INK, font=(FAMILY, 12))
     style.configure("TButton", background=WHITE, foreground=INK, bordercolor=LINE,
                     lightcolor=LINE, darkcolor=LINE, padding=(14, 9), width=0, font=(FAMILY, 12))
@@ -33,8 +34,12 @@ def setup(root):
     style.map("Primary.TButton", background=[("disabled", "#A4B5E0"), ("active", "#2147AA")],
               foreground=[("disabled", WHITE), ("active", WHITE)])
     style.configure("Nav.TButton", borderwidth=0, bordercolor=WHITE, lightcolor=WHITE, darkcolor=WHITE)
-    style.configure("Selected.TButton", background=PALE, foreground=BLUE, bordercolor=PALE)
+    style.configure("Selected.TButton", background=PALE, foreground=BLUE, bordercolor=PALE,
+                    lightcolor=PALE, darkcolor=PALE)
     style.map("Selected.TButton", background=[("active", PALE)])
+    style.configure("Accent.TButton", background=LIME, foreground=INK, bordercolor=LIME, lightcolor=LIME, darkcolor=LIME)
+    style.map("Accent.TButton", background=[("pressed", "#C3E35D"), ("active", "#D2F268")])
+    style.map("Primary.TButton", background=[("disabled", "#A4B5E0"), ("pressed", "#1037A7"), ("active", "#245CEB")], foreground=[("disabled", WHITE)])
     style.configure("Danger.TButton", foreground=RED)
     style.configure("TEntry", padding=8, fieldbackground=WHITE, bordercolor=LINE)
     style.map("TEntry", bordercolor=[("focus", BLUE), ("invalid", RED)])
@@ -57,5 +62,5 @@ def label(parent, text="", *, size=12, bold=False, color=INK, bg=WHITE, **kwargs
 
 def button(parent, text, command, kind="default", **kwargs):
     styles = {"primary": "Primary.TButton", "nav": "Nav.TButton", "selected": "Selected.TButton",
-              "danger": "Danger.TButton", "default": "TButton"}
-    return ttk.Button(parent, text=text, command=command, style=styles[kind], **kwargs)
+              "danger": "Danger.TButton", "accent": "Accent.TButton", "default": "TButton"}
+    return ttk.Button(parent, text=text, command=command, style=styles[kind], cursor="hand2", **kwargs)

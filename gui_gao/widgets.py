@@ -67,6 +67,19 @@ class Field(ttk.Frame):
         else:
             self.var.set(value)
 
+    def observe(self, callback):
+        """Notify for typing, paste and programmatic updates without timer polling."""
+        self._observer = callback
+        if self.multiline:
+            def changed(event=None):
+                if self.input.edit_modified():
+                    self.input.edit_modified(False)
+                    callback()
+            self.input.edit_modified(False)
+            self.input.bind("<<Modified>>", changed, add="+")
+        else:
+            self._trace = self.var.trace_add("write", lambda *_: callback())
+
     def show_error(self, message):
         self.error.configure(text=message)
         if not self.multiline:
@@ -74,6 +87,8 @@ class Field(ttk.Frame):
 
     def destroy(self):
         # Release Tcl resources on the UI thread, not a later worker GC cycle.
+        if hasattr(self, "_trace"):
+            self.var.trace_remove("write", self._trace)
         self.var = None
         super().destroy()
 
@@ -164,3 +179,61 @@ def empty_state(parent, title, message, command, button_text="重新加载"):
     t.label(box, title, size=19, bold=True, anchor="center").pack(pady=12)
     t.label(box, message, color=t.MUTED, wraplength=650, justify="center").pack(pady=10)
     t.button(box, button_text, command).pack(pady=15)
+
+
+class MarketHero(tk.Frame):
+    """B's blue/lime hero. A short pointer-driven accent replaces web animations."""
+    def __init__(self, parent, app):
+        super().__init__(parent, bg=t.BLUE)
+        copy = tk.Frame(self, bg=t.BLUE)
+        copy.pack(side='left', fill='both', expand=True, padx=28, pady=22)
+        t.label(copy, 'THE CAMPUS MARKET IS OPEN.', size=10, bold=True,
+                color=t.LIME, bg=t.BLUE).pack(anchor='w')
+        t.label(copy, '逛逛校园，\n发现你的下一件好物。', size=25, bold=True,
+                color=t.WHITE, bg=t.BLUE, justify='left').pack(anchor='w', pady=(8, 5))
+        t.label(copy, '书本、数码、日常小物，都能在这里再出发。', size=11,
+                color='#DFE8FF', bg=t.BLUE).pack(anchor='w')
+        t.button(copy, '让我的闲置出发  →', lambda: app.show('publish'), 'accent').pack(anchor='w', pady=(12, 0))
+        self.art = tk.Canvas(self, width=290, height=215, bg=t.BLUE, highlightthickness=0)
+        self.art.pack(side='right', padx=(0, 22))
+        self.photos = []
+        # Decorative illustrations, with no fabricated price or product availability.
+        for x, y, name, caption in [(12, 32, 'keyboard', '把书桌布置成喜欢的样子'), (139, 66, 'bag', '装下新一天的小日常')]:
+            self.art.create_rectangle(x, y, x+137, y+137, fill=t.WHITE, outline=t.WHITE, tags='paper')
+            pic = tk.PhotoImage(master=self, file=str(Path(__file__).parent / 'assets' / f'{name}.png'))
+            scale = max(1, math.ceil(max(pic.width()/122, pic.height()/96)))
+            pic = pic.subsample(scale, scale)
+            self.photos.append(pic)
+            self.art.create_image(x+68, y+55, image=pic, tags='paper')
+            self.art.create_text(x+68, y+119, text=caption, fill=t.INK, font=(t.FAMILY, 8), tags='paper')
+        self.art.create_oval(218, 10, 277, 69, fill=t.LIME, outline='', tags='sticker')
+        self.art.create_text(248, 39, text='GOOD\nFINDS!', fill=t.INK, font=(t.FAMILY, 9, 'bold'), tags='sticker')
+        self.app = app
+        self.job = None
+        self.offset = 0
+        self.art.bind('<Enter>', lambda e: self.animate(-5))
+        self.art.bind('<Leave>', lambda e: self.animate(0))
+
+    def animate(self, target):
+        if getattr(self.app, "reduce_motion", False):
+            target = 0
+        if self.job:
+            self.after_cancel(self.job)
+        def step():
+            delta = target - self.offset
+            if abs(delta) < .3:
+                self.art.move('paper', 0, delta)
+                self.offset = target
+                self.job = None
+                return
+            movement = delta * .4
+            self.art.move('paper', 0, movement)
+            self.offset += movement
+            self.job = self.after(20, step)
+        step()
+
+    def destroy(self):
+        if self.job:
+            self.after_cancel(self.job)
+        self.photos.clear()
+        super().destroy()

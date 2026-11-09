@@ -20,3 +20,9 @@ demo_data/*.json
 Thumbs.db
 .idea/
 .vscode/
+
+# 互动服务本地数据（前端连接后生成，不提交）
+backend_zhang/data/favorites.json
+backend_zhang/data/messages.json
+backend_zhang/data/intentions.json
+backend_zhang/data/system_logs.json

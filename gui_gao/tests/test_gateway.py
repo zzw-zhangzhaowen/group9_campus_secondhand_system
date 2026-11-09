@@ -168,7 +168,9 @@ class ValidationTests(unittest.TestCase):
     def test_default_module_adapter_uses_team_function_names(self):
         users, items = Mock(), Mock()
         users.login_user.return_value = {"success": True, "data": {"id": 7, "nickname": "同学"}}
-        gateway = Gateway(users, items)
+        temp = tempfile.TemporaryDirectory(prefix="group9-mock-")
+        self.addCleanup(temp.cleanup)
+        gateway = Gateway(users, items, feature_directory=temp.name)
         gateway.login("name", "value")
         users.login_user.assert_called_once_with("name", "value")
         self.assertEqual(gateway.user_id(), 7)
