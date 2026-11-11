@@ -26,24 +26,23 @@ from feature_du.messages import MessageService
 
 
 class TestFeatureC(unittest.TestCase):
-    """测试C写的附加模块：收藏、意向、留言"""
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
         self.user_file = os.path.join(self.tmp, "c_test_users.json")
         self.item_file = os.path.join(self.tmp, "c_test_items.json")
 
         reset_user_service(data_file=self.user_file)
-        buyer_reg = register_user("buyer01", "Buy@123456", "买家小明")
-        seller_reg = register_user("seller02", "Sell@123456", "卖家阿华")
+        buyer_reg = register_user("buyer01", "Buy@123456", "BuyerXiaoMing")
+        seller_reg = register_user("seller02", "Sell@123456", "SellerAhHua")
         self.buyer_id = buyer_reg["data"]["id"]
         self.seller_id = seller_reg["data"]["id"]
 
         ur = UserRepository(data_file=self.user_file)
         reset_item_service(data_file=self.item_file, user_repository=ur)
-   
-        item_res = create_item(self.seller_id, "二手耳机", "电子产品", 60, "正常使用")
+    
+        item_res = create_item(self.seller_id, "Headphones", "electronics", 60, "Works normally")
         if not item_res["success"]:
-            raise RuntimeError(f"创建商品失败，返回内容：{item_res}")
+            raise RuntimeError(f"Failed to create item, response: {item_res}")
         self.item_id = item_res["data"]["id"]
 
         self.fav_path = os.path.join(self.tmp, "fav.json")
@@ -58,64 +57,56 @@ class TestFeatureC(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_favorite_toggle_add(self):
-        """测试：添加收藏"""
         res = self.fav_service.toggle_favorite(user_id=self.buyer_id, item_id=self.item_id)
         self.assertEqual(res["success"], True)
-        self.assertEqual(res["message"], "收藏成功")
+        self.assertEqual(res["message"], "Item favorited successfully")
 
     def test_favorite_toggle_remove(self):
-        """测试：取消收藏（先收藏，再取消）"""
         self.fav_service.toggle_favorite(user_id=self.buyer_id, item_id=self.item_id)
         res = self.fav_service.toggle_favorite(user_id=self.buyer_id, item_id=self.item_id)
         self.assertEqual(res["success"], True)
-        self.assertEqual(res["message"], "已取消收藏")
+        self.assertEqual(res["message"], "Item removed from favorites")
 
     def test_favorite_get_user_fav(self):
-        """测试：获取用户收藏列表"""
         self.fav_service.toggle_favorite(user_id=self.buyer_id, item_id=self.item_id)
         res = self.fav_service.get_user_favorites(user_id=self.buyer_id)
         self.assertTrue(res["success"])
         self.assertEqual(len(res["data"]), 1)
 
     def test_intention_create_normal(self):
-        """正常提交购买意向"""
         res = self.int_service.create_intention(
             user_id=self.buyer_id,
             item_id=self.item_id,
             seller_id=self.seller_id
         )
         self.assertTrue(res["success"])
-        self.assertEqual(res["message"], "已成功提交购买意向")
+        self.assertEqual(res["message"], "Purchase intention submitted successfully")
 
     def test_intention_self_item_fail(self):
-        """边界：不能给自己的商品提交意向"""
         res = self.int_service.create_intention(
             user_id=self.seller_id,
             item_id=self.item_id,
             seller_id=self.seller_id
         )
         self.assertFalse(res["success"])
-        self.assertEqual(res["message"], "不能对自己发布的商品提交意向")
+        self.assertEqual(res["message"], "Cannot submit purchase intention for your own item")
 
     def test_intention_get_user_intention(self):
-        """查询意向单"""
         self.int_service.create_intention(self.buyer_id, self.item_id, self.seller_id)
         res = self.int_service.get_user_intentions(self.buyer_id)
         self.assertTrue(res["success"])
         self.assertGreaterEqual(len(res["data"]), 1)
 
     def test_message_add_normal(self):
-        """正常添加留言"""
         res = self.msg_service.add_message(
             item_id=self.item_id,
             user_id=self.buyer_id,
-            content="请问还在吗？"
+            content="Is this still available?"
         )
         self.assertTrue(res["success"])
-        self.assertEqual(res["message"], "留言成功")
+        self.assertEqual(res["message"], "Message added successfully")
 
     def test_message_add_empty_fail(self):
-        """边界：留言为空，提交失败"""
         res = self.msg_service.add_message(
             item_id=self.item_id,
             user_id=self.buyer_id,
@@ -124,15 +115,13 @@ class TestFeatureC(unittest.TestCase):
         self.assertFalse(res["success"])
 
     def test_message_get_item_msg(self):
-        """获取商品全部留言"""
-        self.msg_service.add_message(self.item_id, self.buyer_id, "什么时候可以面交？")
+        self.msg_service.add_message(self.item_id, self.buyer_id, "When can we meet for handover?")
         res = self.msg_service.get_item_messages(item_id=self.item_id)
         self.assertTrue(res["success"])
         self.assertGreaterEqual(len(res["data"]), 1)
 
 
 class TestUserModule(unittest.TestCase):
-    """测试【用户模块 user_service】"""
     @classmethod
     def setUpClass(cls):
         cls.tmp_dir = tempfile.mkdtemp()
@@ -144,41 +133,41 @@ class TestUserModule(unittest.TestCase):
         shutil.rmtree(cls.tmp_dir, ignore_errors=True)
 
     def test_register_success(self):
-        res = register_user("Tom01", "Abc123456", "小汤同学")
+        res = register_user("Tom01", "Abc123456", "TomStudent")
         self.assertEqual(res["success"], True)
         self.assertNotIn("password_hash", res["data"])
 
     def test_register_dup_username(self):
-        register_user("Jack01", "Def654321", "杰克")
-        res = register_user("Jack01", "Other98765", "重名测试")
+        register_user("Jack01", "Def654321", "Jack")
+        res = register_user("Jack01", "Other98765", "DuplicateNameTest")
         self.assertEqual(res["success"], False)
-        self.assertEqual(res["message"], "用户名已存在")
+        self.assertEqual(res["message"], "Username already exists")
 
     def test_register_bad_password(self):
-        res = register_user("Lily01", "123", "莉莉")
+        res = register_user("Lily01", "123", "Lily")
         self.assertEqual(res["success"], False)
 
     def test_login_correct(self):
-        register_user("Alice01", "Qwe789012", "爱丽丝")
+        register_user("Alice01", "Qwe789012", "Alice")
         res = login_user("Alice01", "Qwe789012")
         self.assertTrue(res["success"])
         self.assertIsNotNone(res["data"]["id"])
 
     def test_login_wrong_password(self):
-        register_user("Bob01", "Zxc345678", "鲍勃")
+        register_user("Bob01", "Zxc345678", "Bob")
         res = login_user("Bob01", "wrongpass")
         self.assertFalse(res["success"])
-        self.assertEqual(res["message"], "用户名或密码错误")
+        self.assertEqual(res["message"], "Invalid username or password")
 
     def test_update_nickname(self):
-        reg = register_user("UserA01", "Aaa111111", "旧昵称")
+        reg = register_user("UserA01", "Aaa111111", "OldNickname")
         uid = reg["data"]["id"]
-        res = update_nickname(uid, "全新昵称")
+        res = update_nickname(uid, "BrandNewNickname")
         self.assertTrue(res["success"])
-        self.assertEqual(res["data"]["nickname"], "全新昵称")
+        self.assertEqual(res["data"]["nickname"], "BrandNewNickname")
 
     def test_change_password(self):
-        reg = register_user("PwUser01", "Ppp123456", "密码测试")
+        reg = register_user("PwUser01", "Ppp123456", "PasswordTester")
         uid = reg["data"]["id"]
         res = change_password(uid, "Ppp123456", "Newp@ss99")
         self.assertTrue(res["success"])
@@ -186,7 +175,7 @@ class TestUserModule(unittest.TestCase):
         self.assertTrue(new_login["success"])
 
     def test_user_exists_true_false(self):
-        reg = register_user("ExistUser", "Eee123456", "存在")
+        reg = register_user("ExistUser", "Eee123456", "Exist")
         uid = reg["data"]["id"]
         r1 = user_exists(uid)
         self.assertEqual(r1["data"], True)
@@ -195,7 +184,6 @@ class TestUserModule(unittest.TestCase):
 
 
 class TestItemModule(unittest.TestCase):
-    """测试【商品模块 item_service】"""
     @classmethod
     def setUpClass(cls):
         cls.tmp_dir = tempfile.mkdtemp()
@@ -204,36 +192,36 @@ class TestItemModule(unittest.TestCase):
         cls.del_file = os.path.join(cls.tmp_dir, "items_deleted.json")
         cls.meta_file = os.path.join(cls.tmp_dir, "items_meta.json")
         reset_user_service(data_file=cls.u_file)
-        reg_res = register_user("Seller01", "Sell123456", "卖家小王")
+        reg_res = register_user("Seller01", "Sell123456", "SellerWang")
         cls.seller_id = reg_res["data"]["id"]
         ur = UserRepository(data_file=cls.u_file)
         reset_item_service(data_file=cls.i_file, user_repository=ur,
-                           deleted_file=cls.del_file, meta_file=cls.meta_file)
+                            deleted_file=cls.del_file, meta_file=cls.meta_file)
 
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.tmp_dir, ignore_errors=True)
 
     def test_create_item_ok(self):
-        res = create_item(self.seller_id, "Python课本", "书籍", 32.0, "九成新课本")
+        res = create_item(self.seller_id, "Python Textbook", "books", 32.0, "90% new textbook")
         self.assertTrue(res["success"])
-        self.assertEqual(res["data"]["name"], "Python课本")
+        self.assertEqual(res["data"]["name"], "Python Textbook")
         self.item1_id = res["data"]["id"]
 
     def test_create_item_price_negative(self):
-        res = create_item(self.seller_id, "坏耳机", "电子产品", -10, "坏掉耳机")
+        res = create_item(self.seller_id, "Broken Headphone", "electronics", -10, "Broken headphone")
         self.assertFalse(res["success"])
 
     def test_search_by_keyword(self):
-        create_item(self.seller_id, "机械键盘", "电子产品", 88, "青轴键盘")
-        res = search_items(keyword="键盘")
+        create_item(self.seller_id, "Mechanical Keyboard", "electronics", 88, "Blue switch keyboard")
+        res = search_items(keyword="keyboard")
         self.assertTrue(res["success"])
         self.assertGreaterEqual(len(res["data"]), 1)
 
     def test_remove_restore_item(self):
-        r = create_item(self.seller_id, "护眼台灯", "生活用品", 29, "宿舍台灯")
+        r = create_item(self.seller_id, "Desk Lamp", "household", 29, "Dorm lamp")
         iid = r["data"]["id"]
- 
+
         down = remove_item(iid, self.seller_id)
         self.assertTrue(down["success"])
         q1 = get_item_by_id(iid)
@@ -245,7 +233,7 @@ class TestItemModule(unittest.TestCase):
         self.assertTrue(q2["success"])
 
     def test_permanent_delete_item(self):
-        r = create_item(self.seller_id, "旧笔记本", "生活用品", 5, "本子")
+        r = create_item(self.seller_id, "Notebook", "household", 5, "Paper notebook")
         iid = r["data"]["id"]
         del_res = delete_item_permanently(iid, self.seller_id)
         self.assertTrue(del_res["success"])
@@ -253,9 +241,9 @@ class TestItemModule(unittest.TestCase):
         self.assertFalse(q["success"])
 
     def test_update_item(self):
-        r = create_item(self.seller_id, "水杯", "生活用品", 18, "普通水杯")
+        r = create_item(self.seller_id, "Water Cup", "household", 18, "Daily cup")
         iid = r["data"]["id"]
-        res = update_item(iid, self.seller_id, {"price": 12, "description": "降价出"})
+        res = update_item(iid, self.seller_id, {"price": 12, "description": "Price reduced"})
         self.assertTrue(res["success"])
         self.assertEqual(res["data"]["price"], 12)
 

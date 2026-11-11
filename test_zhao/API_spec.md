@@ -37,16 +37,16 @@ Failed response:
 
 Conventions:
 1. `success` must always be a Boolean; callers determine success or failure based solely on this field.
-2. `message` must always be a Chinese prompt that can be displayed directly to users; the frontend must not alter its meaning.
+2. `message` must always be an English prompt that can be displayed directly to users; the frontend must not alter its meaning.
 3. In `backend_zhang`, `data` must always be returned as a `deepcopy`, so callers can modify the return value without contaminating internal data.
-4. The `data` returned by user-related interfaces must be a redacted view and **must never include fields such as `password`, `password_hash`, or `password_salt**.
+4. The `data` returned by user-related interfaces must be a redacted view and **must never include fields such as `password`, `password_hash`, or `password_salt`.
 5. No interface may raise an uncaught exception to its caller; exceptions are uniformly converted at the service layer into a `success=False` response.
 
 ### 1.3 General Data and Parameter Validation Conventions
 | Parameter Type | Constraint |
 |---|---|
 | `user_id` / `item_id` / `seller_id` | Must be positive integers (`1, 2, 3...`); negative numbers, 0, Boolean values, and non-numeric strings are all invalid |
-| `category` (item category) | Must be one of the four whitelist values: `Books`、`Electronics`、`Clothing`、`Household goods`; case and wording must match exactly; values such as `Digital` and `Digital products` are invalid |
+| `category` (item category) | Must be one of the four whitelist values: `Books`、`Electronics`、`Clothing`、`Household goods`; validation is case-sensitive; values such as `Digital` and `Digital products` are invalid |
 | `status` (item status) | Only two states: `For sale` and `Delisted` |
 | `price` | Must be a number greater than 0; negative numbers, 0, empty strings, and alphabetic text are invalid; stored with two decimal places |
 | `sort_by` (sort field) | Must be in the whitelist: `created_at`, `updated_at`, `price` |
@@ -153,7 +153,7 @@ Additional modules (favorites, intentions, messages) all depend on this componen
 
 ### 4.2 Key Business Rules
 1. **create_item**
-   - `category` must match one of the four whitelist values; otherwise, returns `success=False`, `message='Item category must be: Books, Electronics, Clothing, Household goods'`.
+   - `category` must match one of the four whitelist values exactly; otherwise, returns `success=False`, `message='Item category must be: Books, Electronics, Clothing, Household goods'`.
    - Rejects listing if `price` is negative or 0.
    - The user corresponding to `seller_id` must exist; otherwise, displays `Seller user does not exist`.
    - Item IDs are assigned by the independent ID generator `items_meta.json`, strictly increase, and are never reused after deletion.
@@ -189,7 +189,7 @@ Additional modules (favorites, intentions, messages) all depend on this componen
 ### 5.2 Key Business Rules
 1. **Favorite `toggle_favorite`**
    - Pre-validation: the user must exist, and the item must exist and be for sale; otherwise, returns `User does not exist` or `Item does not exist or has been delisted`, respectively.
-   - Repeated calls for the same `(user_id, item_id)` have “toggle” semantics: the first returns `Favorite added`, and the second returns `Favorite removed`.
+   - Repeated calls for the same `(user_id, item_id)` have “toggle” semantics: the first returns `Item favorited successfully`, and the second returns `Item removed from favorites`.
 2. **Intention `create_intention`**
    - Pre-validation: the buyer user must exist, the seller user must exist, and the item must be for sale.
    - **If the buyer’s `user_id` is the same as `seller_id` (submitting an intention for their own item), the request must be rejected** with `You cannot submit an intention for an item you posted yourself`.
