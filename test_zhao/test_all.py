@@ -45,7 +45,7 @@ class TestFeatureC(unittest.TestCase):
             raise RuntimeError(f"Failed to create item, response: {item_res}")
         self.item_id = item_res["data"]["id"]
 
-        self.fav_path = os.path.join(self.tmp, "fav.json")
+
         self.int_path = os.path.join(self.tmp, "int.json")
         self.msg_path = os.path.join(self.tmp, "msg.json")
 
