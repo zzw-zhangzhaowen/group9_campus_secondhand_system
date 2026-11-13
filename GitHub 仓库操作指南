@@ -97,6 +97,8 @@ The standalone web design prototype remains separate and is not a production bac
 
 5. Gao frontend checks and handoff
 
+13 November update: B-style Tkinter visual refinements and Tcl-variable cleanup fix are in gui_gao. Standard unittest discovery passed 56 tests in 11.355 seconds with automatic garbage collection enabled on macOS / Python 3.12. Native screenshots were reviewed for sign-in, browse, profile, enquiries, activity and listing forms. Startup commands below remain valid.
+
   python3 -m unittest discover -s gui_gao/tests -v
 
 On 10 November, all 55 frontend checks passed with no skips in 7.604 seconds on macOS / Python 3.12.14. The checks include real Tk pages, English enum mapping, isolated feature validation, matching IDs in independent directories, animation pause/reduced motion and task cleanup. The earlier 19 backend-check passes are historical, not a new result. Windows/Linux native rendering and the group's final demonstration machine remain unverified.

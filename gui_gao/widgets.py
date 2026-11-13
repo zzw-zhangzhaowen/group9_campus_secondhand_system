@@ -6,6 +6,7 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import ttk
 from . import theme as t
+from .lifecycle import StringVar
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -36,7 +37,7 @@ class Field(ttk.Frame):
         super().__init__(parent)
         self.multiline = multiline
         t.label(self, title, bold=True).pack(anchor="w", pady=(0, 6))
-        self.var = tk.StringVar(master=self, value=value)
+        self.var = StringVar(master=self, value=value)
         if multiline:
             self.input = tk.Text(self, height=5, width=width, wrap="word", undo=True,
                                  font=(t.FAMILY, 12), bg=t.WHITE, fg=t.INK,
@@ -181,12 +182,12 @@ def empty_state(parent, title, message, command, button_text="Reload"):
     t.button(box, button_text, command).pack(pady=15)
 
 
-class MarketHero(tk.Frame):
+class MarketHero(ttk.Frame):
     """B's blue/lime hero. A short pointer-driven accent replaces web animations."""
     def __init__(self, parent, app):
-        super().__init__(parent, bg=t.BLUE)
+        super().__init__(parent, style="Hero.TFrame", padding=12)
         copy = tk.Frame(self, bg=t.BLUE)
-        copy.pack(side='left', fill='both', expand=True, padx=28, pady=22)
+        copy.pack(side='left', fill='both', expand=True, padx=28, pady=28)
         t.label(copy, 'THE CAMPUS MARKET IS OPEN.', size=10, bold=True,
                 color=t.LIME, bg=t.BLUE).pack(anchor='w')
         t.label(copy, 'Browse campus.\nFind your next item.', size=25, bold=True,

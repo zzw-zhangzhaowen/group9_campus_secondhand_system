@@ -91,3 +91,24 @@ The initial environment was macOS Apple Silicon, Python 3.12.14 and Tk 9.0.4 wit
 Native inspection covered sign-in, home, publishing, my listings and account settings. The demo showed eight sample listings, including three owned by the sample Gao account. Keyboard navigation and vertical form scrolling were checked. A narrow-window issue was corrected by choosing three or four card columns when rendering; keyboard number shortcuts were also separated from mouse events.
 
 At that initial stage, the additional community features were not yet connected. The later 4 November integration results supersede that historical limitation. Frontend checks remain separate from the group's final integration, presentation and submission review.
+
+
+## Tkinter B-style update — 13 November 2026
+
+Updated platform font selection, rounded blue banners and pale statistic panels,
+login proportions, listing cards and larger secondary-page illustrations.
+Animation controls use styled ttk buttons so their labels remain visible on macOS.
+
+Widget-owned Tcl variables now release their resources during the owner widget's
+Destroy event on the UI thread. Retired page cycles are collected before submitting
+service work. Automatic garbage collection stays enabled. A regression test holds
+a retired page variable and verifies its release after navigation.
+
+Validation on macOS / Python 3.12: the ordinary unittest discovery command passed
+56 tests in 11.355 seconds, with no Tcl cleanup exceptions. This supersedes the
+earlier diagnostic run that disabled automatic garbage collection. Native screenshots
+were reviewed for sign-in, browse, profile, enquiries, activity and listing forms.
+Minimum-width, route/clock animation, pause/reduced-motion and service-flow tests
+passed. Windows and Linux rendering have not been verified.
+
+All implementation and test changes are confined to gui_gao.

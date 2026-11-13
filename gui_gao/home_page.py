@@ -110,13 +110,13 @@ class HomePage(ScrollPage):
             self.results.columnconfigure(column, weight=1 if column < self.columns else 0, uniform="cards" if column < self.columns else "")
         start = self.page_number * self.PAGE_SIZE
         for index, item in enumerate(self.items[start:start+self.PAGE_SIZE]):
-            card = ttk.Frame(self.results, padding=(0,0,0,18))
+            card = ttk.Frame(self.results, padding=(12,12,12,18), style="Card.TFrame")
             card.grid(row=index//self.columns, column=index%self.columns, sticky="nsew", padx=8, pady=10)
             picture = ItemImage(card, item.get("image_path", ""), item["category"], width=190, height=170)
             picture.pack(fill="x")
             picture.bind("<Button-1>", lambda e, i=item["id"]: self.app.show("detail", item_id=i))
             picture.configure(cursor="hand2")
-            content = ttk.Frame(card, padding=(1,12,1,0))
+            content = ttk.Frame(card, padding=(4,14,4,0))
             content.pack(fill="x")
             t.label(content, item["category"], size=10, color=t.MUTED).pack(anchor="w")
             t.label(content, item["name"], size=13, bold=True, wraplength=200, justify="left").pack(anchor="w", pady=(5,8))

@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+import gc
 import tkinter as tk
 from tkinter import ttk, messagebox
 from . import theme as t
+from .lifecycle import StringVar
 from .gateway import Gateway, UserError
 from .widgets import ScrollPage
 
@@ -21,7 +23,7 @@ class CampusApp:
         self.route = "login"
         self.keyword, self.category, self.sort = "", "", "Newest"
         self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="campus-service")
-        self.status = tk.StringVar()
+        self.status = StringVar(master=root)
         t.setup(root)
         root.title("Campus Market · Design B · Group 9" + (" · Demo" if demo else ""))
         root.geometry("1180x820")
@@ -103,6 +105,9 @@ class CampusApp:
                 freeze(child)
         freeze(self.header)
         freeze(self.content)
+        # Collect retired page cycles on the Tcl-owning thread before allocating
+        # service objects in the worker. Automatic GC remains enabled.
+        gc.collect()
         future = self.executor.submit(work)
 
         def poll():

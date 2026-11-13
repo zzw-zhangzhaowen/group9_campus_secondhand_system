@@ -163,6 +163,8 @@ Frontend integration with root `feature_du/` uses Gao's module-local service bin
 
 ### Frontend (gui_gao — GAO JINGYAN)
 
+13 November Tkinter update: platform font fallback, rounded B-style banners and statistic panels, refined login/listing layouts and visible animation controls. Widget-owned Tcl variables are released on the UI thread during destruction. All 56 frontend tests passed with automatic garbage collection enabled on macOS / Python 3.12 (11.355 seconds). See `gui_gao/TEST_REPORT.md` for details.
+
 - English pages, validation, error messages, demo content, code comments and module documentation. Updated on 10 November 2026 against upstream `7ef1a95`.
 - Connected: registration/sign-in, category/keyword search, price sorting, pagination, item details, publishing/editing, own-item off-sale/relist/delete actions, display-name/password updates, saved items, public comments, sent/received enquiries and personal activity.
 - Design B retains illustrated sections, sign-in password visibility, profile summaries, live listing previews, image zoom, filters, checklists and comment counts. The enquiry marker moves through 1 → 2 → 3; clock hands move in steps. Animations can be paused, respect reduced motion and clean up when pages close.

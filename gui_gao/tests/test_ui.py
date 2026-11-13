@@ -63,6 +63,15 @@ class TkFlowTests(unittest.TestCase):
         self.wait()
         self.assertEqual(self.app.route, "home")
 
+    def test_retired_page_variables_are_released_on_destroy(self):
+        # Hold references as a completed future or traceback might do.
+        username = self.app.page.fields["username"].var
+        self.app.show("register", force=True)
+        self.wait()
+        self.assertTrue(username._released)
+        self.assertTrue(gc.isenabled())
+        self.assertTrue(self.app.status.get() is not None)
+
     def test_login_error_then_success(self):
         page = self.app.page
         page.fields["username"].set("student_a")
@@ -343,7 +352,7 @@ class TkFlowTests(unittest.TestCase):
         self.wait()
         banner = next(w for w in self.app.page.body.winfo_children() if isinstance(w, PageBanner))
         self.assertIsNone(banner.art.job)
-        self.assertEqual(banner.motion_control.cget('state'), 'disabled')
+        self.assertTrue(banner.motion_control.instate(['disabled']))
 
     def test_view_filters_keep_records_and_leave_no_callbacks(self):
         self.login()

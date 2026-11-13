@@ -5,30 +5,29 @@ import time
 import tkinter as tk
 from tkinter import ttk
 from . import theme as t
+from .lifecycle import BooleanVar
 
 
-class PageBanner(tk.Frame):
+class PageBanner(ttk.Frame):
     def __init__(self, parent, app, eyebrow, title, description, artwork='book'):
-        super().__init__(parent, bg=t.BLUE)
+        super().__init__(parent, style="Hero.TFrame", padding=12)
         self.app = app
         copy = tk.Frame(self, bg=t.BLUE)
-        copy.pack(side='left', fill='both', expand=True, padx=26, pady=23)
+        copy.pack(side='left', fill='both', expand=True, padx=24, pady=30)
         t.label(copy, eyebrow, size=9, bold=True, color=t.LIME, bg=t.BLUE).pack(anchor='w')
         self.heading = t.label(copy, title, size=25, bold=True, color=t.WHITE, bg=t.BLUE,
-                               wraplength=560, justify='left')
+                               wraplength=480, justify='left')
         self.heading.pack(anchor='w', pady=(10, 7))
         t.label(copy, description, size=11, color='#DBE6FF', bg=t.BLUE,
-                wraplength=550, justify='left').pack(anchor='w')
+                wraplength=470, justify='left').pack(anchor='w')
         scene = {'book': 'home', 'bag': 'publish', 'keyboard': 'mine'}.get(artwork, artwork)
         artwork_box = tk.Frame(self, bg=t.BLUE)
         artwork_box.pack(side='right', padx=(0, 22), pady=10)
-        self.art = SceneArtwork(artwork_box, app, scene)
+        self.art = SceneArtwork(artwork_box, app, scene, large=True)
         self.art.pack()
         if self.art.is_loop:
-            self.motion_control = tk.Button(artwork_box, text='Ⅱ Pause animation',
-                                            command=self.toggle_animation, bg=t.BLUE,
-                                            fg=t.WHITE, highlightbackground=t.BLUE,
-                                            font=(t.FAMILY, 10))
+            self.motion_control = t.button(artwork_box, 'Ⅱ Pause animation',
+                                           self.toggle_animation, 'accent')
             self.motion_control.pack(pady=(0, 4))
             if getattr(app, 'reduce_motion', False):
                 self.motion_control.configure(text='Reduced motion', state='disabled')
@@ -56,7 +55,7 @@ class StatStrip(ttk.Frame):
         self.values = []
         for i, (title, caption, command) in enumerate(entries):
             self.columnconfigure(i, weight=1, uniform='stats')
-            box = tk.Frame(self, bg=t.PALE, padx=18, pady=15)
+            box = ttk.Frame(self, style='Soft.TFrame', padding=(20, 18))
             box.grid(row=0, column=i, sticky='nsew', padx=(0, 12 if i<len(entries)-1 else 0))
             t.label(box, title, size=10, color=t.MUTED, bg=t.PALE).pack(anchor='w')
             value = t.label(box, '—', size=27, bold=True, color=t.BLUE, bg=t.PALE)
@@ -235,7 +234,7 @@ class LocalChecklist(ttk.Frame):
                 color=t.MUTED, wraplength=350, justify='left').pack(anchor='w', pady=(8, 12))
         self.values = []
         for item in items:
-            value = tk.BooleanVar(master=self, value=False)
+            value = BooleanVar(master=self, value=False)
             self.values.append(value)
             ttk.Checkbutton(self, text=item, variable=value, command=self.update_count).pack(anchor='w', pady=5)
         self.summary = t.label(self, '', color=t.MUTED, size=10)

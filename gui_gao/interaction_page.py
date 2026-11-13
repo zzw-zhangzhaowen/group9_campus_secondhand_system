@@ -2,6 +2,7 @@
 import tkinter as tk
 from tkinter import ttk
 from . import theme as t
+from .lifecycle import StringVar, BooleanVar
 from .page_design import PageBanner, note_card, LocalChecklist
 from .widgets import ScrollPage, Field, ItemImage, page_title, empty_state
 
@@ -100,12 +101,12 @@ class InteractionPage(ScrollPage):
         self.direction = 'sent'
         self.records = []
         self.only_available = False
-        self.log_query = tk.StringVar(master=self, value='')
+        self.log_query = StringVar(master=self, value='')
         self.panel = None
         introductions = {'favorites': ('Save it for later.', 'Keep items you like in one place.'),
             'messages': ('Talk through the details.', 'Open an item to continue its public discussion.'),
-            'intentions': ('Let the seller know you are interested.', 'View sent and received enquiries and discuss the handover.'),
-            'logs': ('Your recent activity on Campus Market.', 'Only your own activity is shown. Passwords and comment text are not recorded here.')}
+            'intentions': ('Enquiries.\nPlan your next handover.', 'View sent and received enquiries and discuss the handover.'),
+            'logs': ('Activity log.\nYour campus trail.', 'Only your own activity is shown. Passwords and comment text are not recorded here.')}
         title, subtitle = introductions[kind]
         PageBanner(self.body, app, 'CONNECTIONS / '+TABS[kind], title, subtitle,
                    kind).pack(fill='x', pady=(0,22))
@@ -116,7 +117,7 @@ class InteractionPage(ScrollPage):
                      'selected' if kind == value else 'nav').pack(side='left', padx=(0, 12))
         t.button(tabs, 'Refresh', self.start, 'nav').pack(side='right')
         if kind == 'favorites':
-            self.available = tk.BooleanVar(master=self, value=False)
+            self.available = BooleanVar(master=self, value=False)
             ttk.Checkbutton(self.body, text='Show available items only', variable=self.available,
                             command=self.filter_favorites).pack(anchor='w', pady=(0, 16))
         if kind == 'logs':

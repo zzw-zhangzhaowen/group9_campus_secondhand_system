@@ -12,12 +12,12 @@ class LoginPage(ScrollPage):
         super().__init__(parent)
         self.app = app
         self.registering = app.route == "register"
-        self.body.columnconfigure(0, weight=1)
-        self.body.columnconfigure(1, weight=1)
-        left = tk.Frame(self.body, bg=t.BLUE, padx=26, pady=28)
+        self.body.columnconfigure(0, weight=5, uniform="auth")
+        self.body.columnconfigure(1, weight=4, uniform="auth")
+        left = ttk.Frame(self.body, style="Hero.TFrame", padding=30)
         left.grid(row=0, column=0, sticky="nsew", padx=(0, 28))
         t.label(left, "RE:CAMPUS / CAMPUS MARKET", size=10, bold=True, color=t.LIME, bg=t.BLUE).pack(anchor="w")
-        t.label(left, "Your spare items.\nTheir next find.", size=29, bold=True, justify="left",
+        t.label(left, "Your spare items.\nTheir next find.", size=32, bold=True, justify="left",
                 color=t.WHITE, bg=t.BLUE).pack(anchor="w", pady=(18, 12))
         t.label(left, "Books, lamps and everyday items.\nGive them a second life on campus.", color='#DBE6FF',
                 bg=t.BLUE, justify="left", size=12).pack(anchor="w")
@@ -28,7 +28,7 @@ class LoginPage(ScrollPage):
         t.label(left, "Browse   /   List   /   Meet on campus", size=10,
                 color=t.LIME, bg=t.BLUE).pack(anchor="w", pady=(12, 0))
         t.label(left, "LESS WASTE.  MORE STORIES.", size=9, color='#DBE6FF', bg=t.BLUE).pack(anchor="w", pady=(10, 0))
-        right = ttk.Frame(self.body, padding=(0, 15, 8, 15))
+        right = ttk.Frame(self.body, padding=(16, 26, 16, 26))
         right.grid(row=0, column=1, sticky="nsew")
         tabs = ttk.Frame(right)
         tabs.pack(fill="x", pady=(0, 25))
