@@ -22,7 +22,7 @@ This review covers three iterative versions: ver1 / ver2 / ver3. The back‑end 
 - Expectation: Fully utilise existing design tokens defined in `theme.py` (colors, fonts). Refine cards, forms, buttons and spacing to improve overall UI quality.
 
 > Front‑end Lead Response:
-> ____________
+> Implemented in [8ce1f96](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/8ce1f96). The Tkinter version now uses platform font fallback, rounded banners and statistic panels, refined sign-in spacing, and consistent listing cards. I checked the rendered pages on macOS.
 
 ---
 
@@ -38,7 +38,7 @@ This review covers three iterative versions: ver1 / ver2 / ver3. The back‑end 
 - Expectation: GUI shall invoke public APIs from `feature_du`. Complete full interactions: toggle favourite, view messages, submit intention request and view operation logs.
 
 > Front‑end Lead Response:
-> ____________
+> The GUI now connects saved items, public comments, enquiries and the activity log. [4cc8832](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/4cc8832) aligns the adapter with the current service contracts and adds isolation coverage. Unavailable saved items remain visible as read-only history under the current service rules.
 
 ---
 
@@ -59,7 +59,7 @@ This review covers three iterative versions: ver1 / ver2 / ver3. The back‑end 
 - Suggestion: Replace with `resize()` / `thumbnail()` to generate new image objects. After fix, verify zoom workflow both on Windows (with Pillow) and macOS (without Pillow).
 
 > Front‑end Lead Response:
-> ____________
+> Confirmed by source inspection. The dialog still calls Tk zoom on a photo that can be created by Pillow. Open. I propose moving scaling behind the image loader and exercising both loaders before closing this finding.
 
 ### P1 Layout Adaptation Defects
 
@@ -71,7 +71,7 @@ This review covers three iterative versions: ver1 / ver2 / ver3. The back‑end 
 - Suggestion: Replace fixed hard‑coded widths with adaptive layout, or add horizontal scrollbar. Unify font strategy to mitigate cross‑platform layout drift.
 
 > Front‑end Lead Response:
-> ____________
+> [8ce1f96](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/8ce1f96) improves font fallback and banner spacing. The macOS suite passed its layout assertions. The reported Windows overflow on Browse, My Listings and Account still needs verification.
 
 ### P1 Test Timing Defects (Business functionality works, but UI unit‑tests are flaky)
 
@@ -82,7 +82,7 @@ This review covers three iterative versions: ver1 / ver2 / ver3. The back‑end 
 - Suggestion: Use `self.root.update()` or poll and wait until canvas size is ready before running assertions.
 
 > Front‑end Lead Response:
-> ____________
+> Agreed. Wait for the mapped canvas to reach a usable width before asserting layout, with a bounded timeout. This Windows timing issue remains open.
 
 **Issue 3‑4: Animation job assertion occasionally returns None, causing intermittent test failures**
 
@@ -91,7 +91,7 @@ This review covers three iterative versions: ver1 / ver2 / ver3. The back‑end 
 - Suggestion: Wait for animation scheduling completion before assertion, or verify animation instance creation after page switch.
 
 > Front‑end Lead Response:
-> ____________
+> Agreed. Wait for the animation callback to be scheduled before asserting its state, then verify pause and cleanup separately. Windows timing still needs verification.
 
 ### P2 Systematic Cross‑platform Risks
 
@@ -109,7 +109,7 @@ Root cause summary:
   3. Complete full GUI test pass on Windows and remove the "Windows un‑verified" note in documentation.
 
 > Front‑end Lead Response:
-> ____________
+> Verified environment for [8ce1f96](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/8ce1f96) was macOS with Python 3.12 and Tk. All 56 tests passed there with automatic garbage collection enabled. Windows and Linux validation, including the Pillow path, remains open.
 
 ---
 
@@ -121,9 +121,28 @@ Root cause summary:
 4. This review leverages generative AI for code inspection. AI review screenshots are attached as supporting evidence, which can be saved inside `code_review.md` to satisfy INT6181 course requirements for code review and AI‑usage bonus points.
 
 > Overall Front‑end Summary Response:
-> ____________
-> Overall fix timeline: ________
-> Questions / Back‑end support required: ________
+> The visual refresh, service integration and Tcl cleanup are documented above. The Pillow zoom defect is the next priority.
+> Overall fix timeline: Visual and cleanup update shipped in 8ce1f96. Zoom and Windows follow-up are open.
+> Questions / Back-end support required: No backend change is required for the GUI zoom and layout fixes.
+
+---
+
+## Backend review by Gao Jingyan
+
+**Review_Section:** `backend_zhang/`
+**Reviewer:** GAO Jingyan
+
+### Ver1 — Backend implementation
+
+[4fe7ac9](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/4fe7ac9) introduced shared JSON storage. The same-directory temporary file and atomic replacement protect readers from partially written JSON. The lock is process-local, so running two GUI instances against the same data directory can still lose updates. Please document single-instance use for shared data, or add interprocess locking if multiple instances are supported.
+
+### Ver2 — English service contracts and price validation
+
+[74cf032](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/74cf032) standardised category and status values in English. The GUI adapted to those values in [4cc8832](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/4cc8832). This change affects stored records as well as UI labels, so document whether old data requires migration before reuse.
+
+**Open — Validate prices after rounding.** [`validate_price`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/blob/0b0f7b2/backend_zhang/validators.py#L135-L163) checks positivity before rounding. Direct calls on Python 3.12 returned `0.0` for both "0.004" and "0.005", even though the backend requires a positive price. The GUI already rejects values that round to zero, so direct service callers can behave differently. Please validate the rounded amount and add boundary tests for `0.004`, `0.005`, `0.006` and `0.01`.
+
+Review method: AI-assisted source inspection and direct reproduction of the price boundary. Backend author response pending.
 
 ---
 
