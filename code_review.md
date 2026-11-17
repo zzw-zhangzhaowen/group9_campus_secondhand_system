@@ -132,11 +132,11 @@ Root cause summary:
 **Review_Section:** `backend_zhang/`
 **Reviewer:** GAO Jingyan
 
-### Iteration Ver1 Review
+### Backend Review — 2026-11-17
 
-**Iteration Background:** Initial backend implementation and shared JSON storage
+**Commit hash:** [`1758451`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/1758451964a219b6e470c2d0e8181810b2d3be18) · **Review date:** 2026-11-17
 
-**Commit hash:** [`4fe7ac9`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/4fe7ac9) · **Date:** 2026-10-28
+**Review Background:** Current storage, validation and deletion behavior. The initial storage implementation is traceable to [`4fe7ac9`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/4fe7ac9). Category and status values were updated in [`74cf032`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/74cf032).
 
 **Issue 1: Concurrent GUI instances can lose updates**
 
@@ -146,14 +146,6 @@ Root cause summary:
 
 > Back-end Lead Response: Pending.
 
----
-
-### Iteration Ver2 Review
-
-**Iteration Background:** Backend categories and statuses changed to English
-
-**Commit hash:** [`74cf032`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/74cf032) · **Date:** 2026-11-09
-
 **Issue 2: Existing records may need migration**
 
 - Observation: The update changed category and status values. The GUI aligned with the new values in [`4cc8832`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/4cc8832).
@@ -162,15 +154,9 @@ Root cause summary:
 
 > Back-end Lead Response: Pending.
 
----
-
-### Open Findings from the Current Backend Review
-
-**Reviewed snapshot:** [`06e738e`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/06e738e) · **Review date:** 2026-11-17
-
 **Issue 3: A positive input can be stored as a zero price**
 
-- Observation: Direct calls to [`validate_price`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/blob/06e738e/backend_zhang/validators.py#L135-L163) returned `0.0` for `0.004` and `0.005`. Positivity is checked before rounding.
+- Observation: Direct calls to [`validate_price`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/blob/1758451964a219b6e470c2d0e8181810b2d3be18/backend_zhang/validators.py#L135-L163) returned `0.0` for `0.004` and `0.005`. Positivity is checked before rounding.
 - Impact: Direct service callers can accept prices that the GUI rejects.
 - Expectation: Validate the rounded amount and test `0.004`, `0.005`, `0.006` and `0.01`.
 
@@ -178,7 +164,7 @@ Root cause summary:
 
 **Issue 4: Invalid UTF-8 escapes the login error handler**
 
-- Observation: A temporary users file containing an invalid UTF-8 byte caused `UserService.login()` to raise `UnicodeDecodeError`. [`JsonArrayStore._load_unlocked`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/blob/06e738e/backend_zhang/json_store.py#L77-L98)
+- Observation: A temporary users file containing an invalid UTF-8 byte caused `UserService.login()` to raise `UnicodeDecodeError`. [`JsonArrayStore._load_unlocked`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/blob/1758451964a219b6e470c2d0e8181810b2d3be18/backend_zhang/json_store.py#L77-L98)
 - Impact: The caller receives an exception instead of the usual readable failure response.
 - Expectation: Convert decoding errors to `DataFileError` in both JSON readers and verify the malformed file stays intact.
 
@@ -186,7 +172,7 @@ Root cause summary:
 
 **Issue 5: A failed delete can leave a deletion snapshot behind**
 
-- Observation: With both the delete and rollback operations forced to fail, the live item and the archive snapshot both remained. [`delete_item_permanently`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/blob/06e738e/backend_zhang/item_service.py#L374-L398)
+- Observation: With both the delete and rollback operations forced to fail, the live item and the archive snapshot both remained. [`delete_item_permanently`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/blob/1758451964a219b6e470c2d0e8181810b2d3be18/backend_zhang/item_service.py#L374-L398)
 - Impact: The returned error reports only the deletion failure, so the stale archive entry goes unnoticed.
 - Expectation: Report the rollback failure, document how to reconcile the archive, and test the double-failure path.
 
