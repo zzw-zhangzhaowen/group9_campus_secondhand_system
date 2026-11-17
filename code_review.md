@@ -132,21 +132,65 @@ Root cause summary:
 **Review_Section:** `backend_zhang/`
 **Reviewer:** GAO Jingyan
 
-### Ver1 — Backend implementation
+### Iteration Ver1 Review
 
-[4fe7ac9](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/4fe7ac9) introduced shared JSON storage. The same-directory temporary file and atomic replacement protect readers from partially written JSON. The lock is process-local, so running two GUI instances against the same data directory can still lose updates. Please document single-instance use for shared data, or add interprocess locking if multiple instances are supported.
+**Iteration Background:** Initial backend implementation and shared JSON storage
 
-### Ver2 — English service contracts and price validation
+**Commit hash:** [`4fe7ac9`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/4fe7ac9) · **Date:** 2026-10-28
 
-[74cf032](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/74cf032) standardised category and status values in English. The GUI adapted to those values in [4cc8832](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/4cc8832). This change affects stored records as well as UI labels, so document whether old data requires migration before reuse.
+**Issue 1: Concurrent GUI instances can lose updates**
 
-**Open — Validate prices after rounding.** [`validate_price`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/blob/0b0f7b2/backend_zhang/validators.py#L135-L163) checks positivity before rounding. Direct calls on Python 3.12 returned `0.0` for both "0.004" and "0.005", even though the backend requires a positive price. The GUI already rejects values that round to zero, so direct service callers can behave differently. Please validate the rounded amount and add boundary tests for `0.004`, `0.005`, `0.006` and `0.01`.
+- Observation: Atomic replacement protects against partially written JSON. The storage lock is shared only within one process.
+- Impact: Two GUI instances using the same data directory can read the same old state and overwrite each other's changes.
+- Expectation: Document single-instance use for shared data, or add interprocess locking if concurrent instances are supported.
 
-### Ver3 — Storage error handling and deletion recovery
+> Back-end Lead Response: Pending.
 
-**Open — Return a controlled error for invalid UTF-8.** [`JsonArrayStore._load_unlocked`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/blob/74cf0327f3cc6c8cc3d9ab57a3d03fddeb1608d5/backend_zhang/json_store.py#L77-L98) handles invalid JSON syntax and I/O errors, but a malformed UTF-8 byte raises `UnicodeDecodeError`. With a temporary users file containing a single invalid byte, `UserService.login()` raised that exception instead of returning a readable failure. Catch decoding errors as `DataFileError` in both JSON readers and test that malformed files stay untouched.
+---
 
-**Open — Report failed archive rollback after a failed deletion.** [`delete_item_permanently`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/blob/74cf0327f3cc6c8cc3d9ab57a3d03fddeb1608d5/backend_zhang/item_service.py#L374-L398) archives the snapshot first and suppresses errors when undoing that write. With temporary data and injected failures in both the item deletion and the archive rollback, the service returned only the deletion error while both the live item and its deletion snapshot remained. Acknowledge the rollback failure in the returned error and document how to reconcile the archive. Test this double-failure path so it remains distinguishable from an ordinary failed deletion.
+### Iteration Ver2 Review
+
+**Iteration Background:** Backend categories and statuses changed to English
+
+**Commit hash:** [`74cf032`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/74cf032) · **Date:** 2026-11-09
+
+**Issue 2: Existing records may need migration**
+
+- Observation: The update changed category and status values. The GUI aligned with the new values in [`4cc8832`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/4cc8832).
+- Impact: Files created before the enum change can contain values outside the current contract.
+- Expectation: Document whether such files need migration and how to reuse them safely.
+
+> Back-end Lead Response: Pending.
+
+---
+
+### Open Findings from the Current Backend Review
+
+**Reviewed snapshot:** [`06e738e`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/commit/06e738e) · **Review date:** 2026-11-17
+
+**Issue 3: A positive input can be stored as a zero price**
+
+- Observation: Direct calls to [`validate_price`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/blob/06e738e/backend_zhang/validators.py#L135-L163) returned `0.0` for `0.004` and `0.005`. Positivity is checked before rounding.
+- Impact: Direct service callers can accept prices that the GUI rejects.
+- Expectation: Validate the rounded amount and test `0.004`, `0.005`, `0.006` and `0.01`.
+
+> Back-end Lead Response: Pending.
+
+**Issue 4: Invalid UTF-8 escapes the login error handler**
+
+- Observation: A temporary users file containing an invalid UTF-8 byte caused `UserService.login()` to raise `UnicodeDecodeError`. [`JsonArrayStore._load_unlocked`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/blob/06e738e/backend_zhang/json_store.py#L77-L98)
+- Impact: The caller receives an exception instead of the usual readable failure response.
+- Expectation: Convert decoding errors to `DataFileError` in both JSON readers and verify the malformed file stays intact.
+
+> Back-end Lead Response: Pending.
+
+**Issue 5: A failed delete can leave a deletion snapshot behind**
+
+- Observation: With both the delete and rollback operations forced to fail, the live item and the archive snapshot both remained. [`delete_item_permanently`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/blob/06e738e/backend_zhang/item_service.py#L374-L398)
+- Impact: The returned error reports only the deletion failure, so the stale archive entry goes unnoticed.
+- Expectation: Report the rollback failure, document how to reconcile the archive, and test the double-failure path.
+
+> Back-end Lead Response: Pending.
 
 Review method: AI-assisted source inspection, direct reproduction of the price boundary and invalid UTF-8, and fault injection for archive rollback. Reproduction used temporary data. Backend author response pending.
 
