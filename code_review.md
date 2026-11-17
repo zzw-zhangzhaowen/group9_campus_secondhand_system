@@ -142,7 +142,13 @@ Root cause summary:
 
 **Open — Validate prices after rounding.** [`validate_price`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/blob/0b0f7b2/backend_zhang/validators.py#L135-L163) checks positivity before rounding. Direct calls on Python 3.12 returned `0.0` for both "0.004" and "0.005", even though the backend requires a positive price. The GUI already rejects values that round to zero, so direct service callers can behave differently. Please validate the rounded amount and add boundary tests for `0.004`, `0.005`, `0.006` and `0.01`.
 
-Review method: AI-assisted source inspection and direct reproduction of the price boundary. Backend author response pending.
+### Ver3 — Storage error handling and deletion recovery
+
+**Open — Return a controlled error for invalid UTF-8.** [`JsonArrayStore._load_unlocked`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/blob/74cf0327f3cc6c8cc3d9ab57a3d03fddeb1608d5/backend_zhang/json_store.py#L77-L98) handles invalid JSON syntax and I/O errors, but a malformed UTF-8 byte raises `UnicodeDecodeError`. With a temporary users file containing a single invalid byte, `UserService.login()` raised that exception instead of returning a readable failure. Catch decoding errors as `DataFileError` in both JSON readers and test that malformed files stay untouched.
+
+**Open — Report failed archive rollback after a failed deletion.** [`delete_item_permanently`](https://github.com/zzw-zhangzhaowen/group9_campus_secondhand_system/blob/74cf0327f3cc6c8cc3d9ab57a3d03fddeb1608d5/backend_zhang/item_service.py#L374-L398) archives the snapshot first and suppresses errors when undoing that write. With temporary data and injected failures in both the item deletion and the archive rollback, the service returned only the deletion error while both the live item and its deletion snapshot remained. Acknowledge the rollback failure in the returned error and document how to reconcile the archive. Test this double-failure path so it remains distinguishable from an ordinary failed deletion.
+
+Review method: AI-assisted source inspection, direct reproduction of the price boundary and invalid UTF-8, and fault injection for archive rollback. Reproduction used temporary data. Backend author response pending.
 
 ---
 
