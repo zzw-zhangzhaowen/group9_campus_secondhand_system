@@ -159,8 +159,13 @@ def validate_price(price: object) -> float:
         raise ValidationError("Price must be greater than 0")
     if number > _PRICE_MAX:
         raise ValidationError("Price exceeds the reasonable range")
-    # Round to two decimals to avoid floating-point error leaking into JSON.
-    return float(round(number, 2))
+    # Round to two decimals to avoid floating-point error leaking into JSON, then
+    # re-check positivity: a small positive input such as 0.004 rounds to 0.00 and
+    # must not be stored as a zero price.
+    rounded = round(number, 2)
+    if rounded <= 0:
+        raise ValidationError("Price must be greater than 0 after rounding to two decimals")
+    return float(rounded)
 
 
 def validate_image_path(image_path: object) -> str:

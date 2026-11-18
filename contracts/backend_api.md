@@ -302,6 +302,7 @@ with tempfile.TemporaryDirectory() as tmp:
 | v1.1 | 新增 `is_item_active(item_id)`；新增 `to_safe_dict(user)`；`json_store` 临时文件名唯一化（内部实现） | 纯新增，无破坏性变更 | 无需迁移，按需调用即可 |
 | v1.2 | 新增 `is_item_deleted(item_id)`、`list_deleted_items(limit=50)`；`delete_item_permanently` 增加删除前归档（只读 `items_deleted.json`）；`ItemService` 新增可选参数 `deleted_file` | 纯新增，`delete_item_permanently` 的入参/返回值/语义不变 | 无需迁移，按需调用新接口 |
 | v1.3 | 商品 ID 改为**严格单调、删除后不复用**（新增 `items_meta.json` 计数器，`ItemService` 新增可选参数 `meta_file`） | 纯内部实现变更，接口入参/返回值不变；ID 可能出现跳号（删除后新商品不再复用腾出的 ID） | 无需迁移；历史数据无需处理 |
+| 枚举值变更 | 分类由中文改为 `books/electronics/clothing/household`，状态由中文改为 `on_sale/off_sale`（`config.py` 为准，GUI 已对齐） | 旧版本写入的中文值不再通过校验；后端不会静默改写历史数据 | **需手动迁移**：将旧数据文件中的中文分类/状态值替换为对应英文枚举，或改用新数据文件从头开始；后端不提供自动转换 |
 
 v1.3 明细：
 

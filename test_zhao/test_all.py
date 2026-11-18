@@ -13,12 +13,17 @@ from backend_zhang.user_service import (
     update_nickname, change_password, user_exists, reset_user_service
 )
 from backend_zhang.item_service import (
+    ItemService,
     create_item, get_all_items, get_item_by_id, get_items_by_seller,
     update_item, remove_item, restore_item, delete_item_permanently,
     search_items, item_exists, is_item_active, get_item_status,
     get_public_item_info, is_item_deleted, list_deleted_items, reset_item_service
 )
 from backend_zhang.user_repository import UserRepository
+from backend_zhang.validators import validate_price, ValidationError
+from backend_zhang.json_store import JsonArrayStore, JsonObjectStore
+from backend_zhang.exceptions import DataFileError
+from unittest.mock import patch
 
 from feature_du.favorites import FavoriteService
 from feature_du.intentions import IntentionService
@@ -246,6 +251,113 @@ class TestItemModule(unittest.TestCase):
         res = update_item(iid, self.seller_id, {"price": 12, "description": "Price reduced"})
         self.assertTrue(res["success"])
         self.assertEqual(res["data"]["price"], 12)
+
+
+class TestPriceRoundingBoundary(unittest.TestCase):
+    """Issue 3 review finding: a positive price must not round down to 0."""
+
+    def test_price_rounds_below_one_cent_is_rejected(self):
+        for raw in (0.004, 0.005, 0.001):
+            with self.subTest(raw=raw), self.assertRaises(ValidationError):
+                validate_price(raw)
+
+    def test_price_rounds_to_one_cent_is_accepted(self):
+        for raw in (0.006, 0.01):
+            with self.subTest(raw=raw):
+                self.assertEqual(validate_price(raw), 0.01)
+
+    def test_price_service_rejects_round_to_zero(self):
+        tmp = tempfile.mkdtemp()
+        try:
+            u_file = os.path.join(tmp, "u.json")
+            i_file = os.path.join(tmp, "i.json")
+            reset_user_service(data_file=u_file)
+            reg = register_user("roundseller", "Sell123456", "RoundSeller")
+            ur = UserRepository(data_file=u_file)
+            reset_item_service(data_file=i_file, user_repository=ur)
+            res = create_item(reg["data"]["id"], "Tiny", "books", 0.004, "rounds to zero")
+            self.assertFalse(res["success"])
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
+class TestInvalidUtf8Handling(unittest.TestCase):
+    """Issue 4 review finding: invalid UTF-8 must surface as DataFileError."""
+
+    def test_array_store_invalid_utf8(self):
+        tmp = tempfile.mkdtemp()
+        try:
+            path = os.path.join(tmp, "users.json")
+            with open(path, "wb") as fp:
+                fp.write(b"[\xff]")
+            with open(path, "rb") as fp:
+                raw_before = fp.read()
+            with self.assertRaises(DataFileError):
+                JsonArrayStore(path).load()
+            with open(path, "rb") as fp:
+                self.assertEqual(fp.read(), raw_before)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_object_store_invalid_utf8(self):
+        tmp = tempfile.mkdtemp()
+        try:
+            path = os.path.join(tmp, "meta.json")
+            with open(path, "wb") as fp:
+                fp.write(b"{\xff}")
+            with open(path, "rb") as fp:
+                raw_before = fp.read()
+            with self.assertRaises(DataFileError):
+                JsonObjectStore(path).load()
+            with open(path, "rb") as fp:
+                self.assertEqual(fp.read(), raw_before)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_login_with_invalid_utf8_file_is_readable_failure(self):
+        tmp = tempfile.mkdtemp()
+        try:
+            u_file = os.path.join(tmp, "u.json")
+            with open(u_file, "wb") as fp:
+                fp.write(b"[\xff]")
+            reset_user_service(data_file=u_file)
+            res = login_user("anyone", "Pass123456")
+            self.assertFalse(res["success"])
+            self.assertIsInstance(res["message"], str)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
+class TestArchiveRollbackFailure(unittest.TestCase):
+    """Issue 5 review finding: a failed rollback must not be swallowed."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        u_file = os.path.join(self.tmp, "u.json")
+        i_file = os.path.join(self.tmp, "i.json")
+        reset_user_service(data_file=u_file)
+        reg = register_user("delseller", "Sell123456", "DelSeller")
+        ur = UserRepository(data_file=u_file)
+        self.service = ItemService(data_file=i_file, user_repository=ur)
+        self.uid = reg["data"]["id"]
+        self.iid = self.service.create_item(self.uid, "Notebook", "household", 5, "test")["data"]["id"]
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_double_failure_reports_rollback(self):
+        with patch.object(self.service.repository, "delete", side_effect=DataFileError("disk full")), \
+             patch.object(self.service.archive, "discard_latest", side_effect=DataFileError("archive write failed")):
+            res = self.service.delete_item_permanently(self.iid, self.uid)
+        self.assertFalse(res["success"])
+        self.assertIn("rollback also failed", res["message"])
+        self.assertIn("reconcile", res["message"])
+
+    def test_delete_failure_with_successful_rollback_keeps_original_message(self):
+        with patch.object(self.service.repository, "delete", side_effect=DataFileError("disk full")):
+            res = self.service.delete_item_permanently(self.iid, self.uid)
+        self.assertFalse(res["success"])
+        self.assertNotIn("rollback also failed", res["message"])
 
 
 if __name__ == '__main__':

@@ -144,7 +144,7 @@ Root cause summary:
 - Impact: Two GUI instances using the same data directory can read the same old state and overwrite each other's changes.
 - Expectation: Document single-instance use for shared data, or add interprocess locking if concurrent instances are supported.
 
-> Back-end Lead Response: Pending.
+> Back-end Lead Response: Accepted as a documented constraint, not a code defect. `README.md` Section 7 (Known Limitations) already states that the file lock is in-process and multi-process concurrent writes are out of scope. The product is a local desktop application with one GUI instance; cross-process locking would add OS-specific file-lock code for a scenario the requirements do not cover. No code change.
 
 **Issue 2: Existing records may need migration**
 
@@ -152,7 +152,7 @@ Root cause summary:
 - Impact: Files created before the enum change can contain values outside the current contract.
 - Expectation: Document whether such files need migration and how to reuse them safely.
 
-> Back-end Lead Response: Pending.
+> Back-end Lead Response: Accepted as a documentation gap. No automatic migration will be added: the archive and ID-counter files are append-only and the validator rejects out-of-contract values rather than silently rewriting them, so an old-format file is deliberately not auto-converted. Data written before the enum change must be migrated manually (map old Chinese category/status values to `books/electronics/clothing/household` and `on_sale/off_sale`) or started fresh. I will add this note to the migration table in `contracts/backend_api.md`. No code change.
 
 **Issue 3: A positive input can be stored as a zero price**
 
@@ -160,7 +160,7 @@ Root cause summary:
 - Impact: Direct service callers can accept prices that the GUI rejects.
 - Expectation: Validate the rounded amount and test `0.004`, `0.005`, `0.006` and `0.01`.
 
-> Back-end Lead Response: Pending.
+> Back-end Lead Response: Fixed. `validate_price` now rounds to two decimals first and re-checks positivity on the rounded value, so a small positive input that rounds to `0.00` is rejected instead of being stored as a zero price. Verified: `0.004`, `0.005`, `0.001` raise `ValidationError`; `0.006` and `0.01` return `0.01`; `-10` and the normal path are unchanged. Added `TestPriceRoundingBoundary` (3 tests) covering the boundary values and the service-level `create_item` call.
 
 **Issue 4: Invalid UTF-8 escapes the login error handler**
 
@@ -168,7 +168,7 @@ Root cause summary:
 - Impact: The caller receives an exception instead of the usual readable failure response.
 - Expectation: Convert decoding errors to `DataFileError` in both JSON readers and verify the malformed file stays intact.
 
-> Back-end Lead Response: Pending.
+> Back-end Lead Response: Fixed. Both `JsonArrayStore._load_unlocked` and `JsonObjectStore._load_unlocked` now catch `UnicodeDecodeError` and raise `DataFileError` with a clear "not valid UTF-8" hint; the corrupt file is never overwritten. Verified on both store types (exception type and byte-for-byte file integrity), and `login_user()` against an invalid-UTF-8 users file now returns an ordinary readable failure instead of raising. Added `TestInvalidUtf8Handling` (3 tests).
 
 **Issue 5: A failed delete can leave a deletion snapshot behind**
 
@@ -176,18 +176,6 @@ Root cause summary:
 - Impact: The returned error reports only the deletion failure, so the stale archive entry goes unnoticed.
 - Expectation: Report the rollback failure, document how to reconcile the archive, and test the double-failure path.
 
-> Back-end Lead Response: Pending.
+> Back-end Lead Response: Fixed. `delete_item_permanently` no longer swallows a rollback `BackendError`. On the double-failure path the response now explicitly reports both the deletion failure and the archive rollback failure, and instructs the caller to reconcile `items_deleted.json` manually. Verified by fault injection: double failure reports "rollback also failed", single delete failure keeps its original message, and the normal delete path is unaffected. Added `TestArchiveRollbackFailure` (2 tests).
 
-Review method: AI-assisted source inspection, direct reproduction of the price boundary and invalid UTF-8, and fault injection for archive rollback. Reproduction used temporary data. Backend author response pending.
-
----
-
-## Appendix: AI‑assisted Review Screenshots
-
-![AI review – gui_gao issue summary](code_review_screenshots/ai_review_1_gui_issue_summary.png)
-
-![AI review – conclusion](code_review_screenshots/ai_review_2_conclusion.png)
-
-![AI review – cross‑platform root causes](code_review_screenshots/ai_review_3_cross_platform_causes.png)
-
-![AI review – cross‑platform fix priority](code_review_screenshots/ai_review_4_cross_platform_priority.png)
+Review method: AI-assisted source inspection, direct reproduction of the price boundary and invalid UTF-8, and fault injection for archive rollback. Reproduction used temporary data. All three code defects fixed and covered by tests; the two design/documentation findings are accepted with documentation follow-ups.

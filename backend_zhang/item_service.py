@@ -384,16 +384,24 @@ class ItemService:
             deleted = self.repository.delete(item["id"])
         except BackendError as exc:
             # Roll back the archive just written so no fake "deleted" record remains.
+            # If rollback itself fails, report it: a stale archive snapshot is left
+            # behind and must be reconciled manually, so do not hide that failure.
             try:
                 self.archive.discard_latest(item["id"])
-            except BackendError:
-                pass
+            except BackendError as rollback_exc:
+                return failure(
+                    f"Item not deleted ({exc.message}); deletion archive rollback also failed "
+                    f"({rollback_exc.message}). Please reconcile items_deleted.json manually."
+                )
             return failure(exc.message)
         if not deleted:
             try:
                 self.archive.discard_latest(item["id"])
-            except BackendError:
-                pass
+            except BackendError as rollback_exc:
+                return failure(
+                    f"Item does not exist; deletion archive rollback also failed "
+                    f"({rollback_exc.message}). Please reconcile items_deleted.json manually."
+                )
             return failure("Item does not exist")
         return success({"id": item["id"]}, "Item permanently deleted")
 

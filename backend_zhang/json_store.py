@@ -92,6 +92,12 @@ class JsonArrayStore:
                 f"Data file is corrupt: {os.path.basename(self.path)} (line {exc.lineno}, {exc.msg}), "
                 "please fix it manually or use a backup; the program will not overwrite it"
             ) from exc
+        except UnicodeDecodeError as exc:
+            raise DataFileError(
+                f"Data file is corrupt: {os.path.basename(self.path)} is not valid UTF-8 "
+                f"({exc.reason}), please fix it manually or use a backup; "
+                "the program will not overwrite it"
+            ) from exc
         except OSError as exc:
             raise DataFileError(
                 f"Failed to read data file: {os.path.basename(self.path)} ({exc.strerror or exc})"
@@ -166,6 +172,12 @@ class JsonObjectStore(JsonArrayStore):
             raise DataFileError(
                 f"Data file is corrupt: {os.path.basename(self.path)} (line {exc.lineno}, {exc.msg}), "
                 "please fix it manually or use a backup; the program will not overwrite it"
+            ) from exc
+        except UnicodeDecodeError as exc:
+            raise DataFileError(
+                f"Data file is corrupt: {os.path.basename(self.path)} is not valid UTF-8 "
+                f"({exc.reason}), please fix it manually or use a backup; "
+                "the program will not overwrite it"
             ) from exc
         except OSError as exc:
             raise DataFileError(
