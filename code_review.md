@@ -179,3 +179,67 @@ Root cause summary:
 > Back-end Lead Response: Fixed. `delete_item_permanently` no longer swallows a rollback `BackendError`. On the double-failure path the response now explicitly reports both the deletion failure and the archive rollback failure, and instructs the caller to reconcile `items_deleted.json` manually. Verified by fault injection: double failure reports "rollback also failed", single delete failure keeps its original message, and the normal delete path is unaffected. Added `TestArchiveRollbackFailure` (2 tests).
 
 Review method: AI-assisted source inspection, direct reproduction of the price boundary and invalid UTF-8, and fault injection for archive rollback. Reproduction used temporary data. All three code defects fixed and covered by tests; the two design/documentation findings are accepted with documentation follow-ups.
+
+
+---
+
+## Integration & Unit Test Review by Du Yi
+
+**Review_Section:** `tests/test_all.py`
+**Reviewer:** DU Yi
+
+### Test Suite Review — 2026-11-19
+
+**Review Background:** Consolidated unit and integration test suite covering `feature_du` (`FavoriteService`, `IntentionService`, `MessageService`) and `backend_zhang` (`user_service`, `item_service`, `validators`, `json_store`), including regression test classes (`TestPriceRoundingBoundary`, `TestInvalidUtf8Handling`, `TestArchiveRollbackFailure`) added after the 2026-11-17 backend review (`1758451`). Total: 31 test cases across 6 `unittest.TestCase` classes.
+
+**Issue 1: `LogService` from `feature_du` is completely omitted from the test suite**
+
+- Location: `tests/test_all.py:29-31`, `TestFeatureC` (`tests/test_all.py:34-130`)
+- Observation: `TestFeatureC` imports and exercises `FavoriteService`, `IntentionService`, and `MessageService`, but omits `LogService` (`feature_du/logs.py`), which was implemented in Iteration Ver2. In addition, negative and state-transition paths for `FavoriteService`, `IntentionService`, and `MessageService` (such as duplicate purchase intentions, seller intention status updates, and favoriting non-existent or off-sale items) are not tested.
+- Impact: Operation logging workflows and boundary validations in `feature_du` lack automated regression coverage.
+- Expectation: Add `LogService` test cases (recording and querying user/system operation logs) to `TestFeatureC`, and expand `FavoriteService`, `IntentionService`, and `MessageService` coverage to include duplicate requests, status transitions, and invalid item IDs.
+
+**Issue 2: Incomplete `reset_item_service()` parameters and class-level shared fixtures risk state leakage**
+
+- Location: `tests/test_all.py:45`, `tests/test_all.py:135-144`, `tests/test_all.py:193-209`, `tests/test_all.py:269`
+- Observation:
+  1. `TestFeatureC.setUp` (line 45) and `TestPriceRoundingBoundary.test_price_service_rejects_round_to_zero` (line 269) call `reset_item_service(data_file=..., user_repository=ur)` without passing explicit `deleted_file` and `meta_file` paths (unlike `TestItemModule.setUpClass` on lines 203–204).
+  2. `TestUserModule` and `TestItemModule` initialize temporary JSON storage once in `setUpClass` rather than per test method (`setUp`), causing sequential test methods to mutate shared records.
+  3. None of the test classes restore default service paths or clear singleton state in `tearDown` / `tearDownClass`.
+- Impact: Omitting `deleted_file` and `meta_file` risks writing to default repository data paths if archive/meta operations are triggered, and shared class-level JSON files introduce implicit test-order dependencies.
+- Expectation: Pass explicit temporary `deleted_file` and `meta_file` paths in every `reset_item_service()` call, isolate mutable fixtures per test method where practical, and clean up singleton service state during teardown.
+
+**Issue 3: Unused imports and missing authorization / lifecycle boundary tests in `TestUserModule` and `TestItemModule`**
+
+- Location: `tests/test_all.py:11-21`, `tests/test_all.py:134-190`, `tests/test_all.py:193-244`
+- Observation: Ten imported functions—`get_user_by_id`, `get_public_user_info`, `get_all_items`, `get_items_by_seller`, `item_exists`, `is_item_active`, `get_item_status`, `get_public_item_info`, `is_item_deleted`, and `list_deleted_items`—are imported on lines 12 and 17–20 but never invoked. Moreover, `TestItemModule` does not verify seller ownership restrictions (e.g., another user attempting `update_item`, `remove_item`, `restore_item`, or `delete_item_permanently`), and `TestUserModule` lacks failure cases for `change_password` (wrong old password or weak new password).
+- Impact: Dead imports reduce maintainability, while access-control regressions or sensitive-field leaks (e.g., `password_hash` in public user queries) could go undetected.
+- Expectation: Remove unused imports or add targeted tests for cross-user authorization checks, invalid password updates, item status-transition boundaries, and public query helpers.
+
+**Issue 4: Loose assertions in `TestFeatureC` and `TestItemModule`**
+
+- Location: `tests/test_all.py:80`, `tests/test_all.py:103`, `tests/test_all.py:126`, `tests/test_all.py:214`, `tests/test_all.py:225-235`
+- Observation:
+  1. `test_favorite_get_user_fav` checks `len(res["data"]) == 1` without verifying `item_id` or `user_id`; `test_intention_get_user_intention` (line 103) and `test_message_get_item_msg` (line 126) use `assertGreaterEqual(len(res["data"]), 1)` despite using a fresh temp directory per test, and do not assert payload fields (`content`, `seller_id`).
+  2. `test_remove_restore_item` (lines 225–235) checks `get_item_by_id(iid)` returns `success=False` after `remove_item`, without checking `get_item_status(iid)` or `is_item_active(iid)` to distinguish `off_sale` items from permanently deleted items.
+  3. `self.item1_id = res["data"]["id"]` in `test_create_item_ok` (line 214) sets an unused attribute on a single-method `TestCase` instance.
+- Impact: Field-level data corruption or status misclassifications (e.g., `remove_item` deleting an item instead of marking it `off_sale`) would not fail the test suite.
+- Expectation: Tighten list-length assertions to `assertEqual(..., 1)` with field-level checks, explicitly verify item status states during remove/restore flows, and remove the unused `self.item1_id` assignment.
+
+**Issue 5: `sys.path.append` mutation and unclear suite scope relative to `gui_gao/tests`**
+
+- Location: `tests/test_all.py:1-4`, `tests/test_all.py:296-297`
+- Observation: Line 4 appends the parent directory to `sys.path` via `sys.path.append(...)` instead of `sys.path.insert(0, ...)` or standard package discovery (`python -m unittest`). In addition, despite the filename `test_all.py`, the file runs only the 31 back-end and feature tests (`backend_zhang` and `feature_du`) and does not include or reference the 56 GUI tests under `gui_gao/tests`.
+- Impact: Appending to `sys.path` can resolve stale modules if an identically named package appears earlier on `PYTHONPATH`, and contributors or evaluators running `test_all.py` may assume it executes the entire project test suite.
+- Expectation: Prefer `sys.path.insert(0, ...)` (or standard `unittest` discovery from the repository root) and add a module-level docstring clarifying that `test_all.py` covers `backend_zhang` and `feature_du` tests alongside the command for running `gui_gao/tests`.
+
+> Test Suite Owner Response: Pending follow-up.
+
+---
+
+## Overall Test Suite Review Conclusion
+
+1. The 31 existing tests in `tests/test_all.py` pass cleanly in isolation and effectively verify core CRUD flows plus the three backend regression fixes (`TestPriceRoundingBoundary`, `TestInvalidUtf8Handling`, `TestArchiveRollbackFailure`).
+2. Adding `LogService` coverage, tightening `reset_item_service()` file isolation, and adding ownership/negative test cases will close the remaining verification gaps across `feature_du` and `backend_zhang`.
+
+Review method: Manual source inspection of `tests/test_all.py` against `backend_zhang` and `feature_du` service contracts and prior `code_review.md` findings.
