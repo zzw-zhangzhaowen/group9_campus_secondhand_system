@@ -42,9 +42,9 @@ This review covers three iterative versions: ver1 / ver2 / ver3. The back‑end 
 
 ---
 
-## Iteration Ver3 Review (AI‑assisted code review, attachment: AI review screenshots)
+## Iteration Ver3 Review (AI‑assisted code review)
 
-**Commit hash**: `7ef1a95` · **Date**: 2026‑11‑09 (8 days ago)
+**Commit hash**: `7ef1a95` · **Date**: 2026‑11‑09
 
 > Reference materials: `gui_gao_issue_list.md`, `gui_gao_cross_platform_report.md`
 > Test status: Total 56 test cases under `gui_gao/tests`. 4 FAILED + 1 ERROR on Windows; all 56 passed on macOS. These are environment‑sensitive cross‑platform behaviours.
@@ -118,7 +118,6 @@ Root cause summary:
 1. The P0 `zoom()` crash must be repaired; otherwise the demonstration will crash.
 2. P1 issues such as layout overflow and test timing problems reduce Windows test pass‑rate. Core business logic is correct, yet unstable unit‑tests may hurt project testing‑related marks.
 3. UI visual quality can be further improved by re‑using the existing `theme` design system.
-4. This review leverages generative AI for code inspection. AI review screenshots are attached as supporting evidence, which can be saved inside `code_review.md` to satisfy INT6181 course requirements for code review and AI‑usage bonus points.
 
 > Overall Front‑end Summary Response:
 > The visual refresh, service integration and Tcl cleanup are documented above. The Pillow zoom defect is the next priority.
