@@ -335,7 +335,7 @@ Review method: automated black-box testing with `test_zhao/test_all.py`, using i
 ---
 
 ## Overall Review Conclusion
-Five high-severity blocking defects were found sequentially during the multi-round automated test of `feature_du`. All of them have been fixed by Member C and verified by my test suite.
+Five high-severity blocking defects were found sequentially during the multi-round automated test of `feature_du`. All of them have been fixed by DU Yi and verified by my test suite.
 
 After all fixes, the four supplementary services follow the unified API response contract agreed with `backend_zhang`. The 9 test cases for favorite, purchase intention and message modules all pass, covering normal workflows and boundary rules such as rejecting self-submitted intention and blank messages.
 
