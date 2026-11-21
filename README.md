@@ -6,7 +6,7 @@ Python + Tkinter + 本地 JSON 的校园二手交易**原型**，不涉及真实
 > 收藏 / 留言 / 意向 / 日志已通过前端兼容层接入根目录 `feature_du/` 的真实服务；兼容约定待负责人确认。2026-11-04 的 B 版交付包含四类附加页面、集成测试及交接说明。
 > 整组单元测试（tests_zhao）、报告与 PPT（docs_huang）仍由对应组员补充；前端自测不能替代整组最终验收。
 
-前端使用说明见 [gui_gao/README.md](gui_gao/README.md)，交接事项见 [gui_gao/HANDOFF.md](gui_gao/HANDOFF.md)，检查记录见 [gui_gao/TEST_REPORT.md](gui_gao/TEST_REPORT.md)。
+前端使用说明见 [frontend guide](#frontend-guide)，交接事项见 [gui_gao/HANDOFF.md](gui_gao/HANDOFF.md)，检查记录见 [gui_gao/TEST_REPORT.md](gui_gao/TEST_REPORT.md)。
 
 ---
 
@@ -56,7 +56,7 @@ campus-secondhand/
 │   ├── tools/              # 可选插画生成工具（运行前端不需要）
 │   ├── tests/               # 前端补充测试，不替代 tests_zhao
 │   ├── launch_demo.command   # macOS isolated demo launcher
-│   └── README.md / HANDOFF.md / TEST_REPORT.md
+│   └── HANDOFF.md / TEST_REPORT.md
 ├── test_zhao/                    # 整组单元测试与测试文档模块（ZHAO XIAOJUN）
 │   ├──__init__.py
 │   ├──test_all.py               # 集成自动化测试入口：unittest，用户/商品/收藏/意向/留言全套用例，隔离临时 JSON
@@ -98,7 +98,7 @@ python3 -m gui_gao --data-dir ./my_practice_data
 
 正式模式没有预设账号，请先注册。独立前端演示账号为 `gao_demo`，密码为 `Campus123`；其他演示用户和商品也都是虚构数据。前端演示使用系统临时目录，与后端的 `main.py --demo` 分开；自选练习目录会保留数据，请勿提交其 JSON 文件。
 
-Mac: open `gui_gao/launch_demo.command`; the historical `gui_gao/启动演示.command` remains a compatibility shortcut. 旧的可选 `.app` 启动器因重复打开曾报错且功能重复，已从版本管理移除；保留命令行与 `.command` 两种入口，均需要本机 Python/Tkinter。JPEG 预览可由环境中已有的 Pillow 增强，但 Pillow 不是必需依赖。详情见前端 README。
+Mac: open `gui_gao/launch_demo.command`; the historical `gui_gao/启动演示.command` remains a compatibility shortcut. 旧的可选 `.app` 启动器因重复打开曾报错且功能重复，已从版本管理移除；保留命令行与 `.command` 两种入口，均需要本机 Python/Tkinter。JPEG 预览可由环境中已有的 Pillow 增强，但 Pillow 不是必需依赖。See the frontend guide below.
 
 首次调用任何接口时，`backend_zhang/data/` 下的 `users.json`、`items.json`、`items_deleted.json`
 会自动创建为空数组 `[]`，`items_meta.json` 自动创建为 `{"next_item_id": 1}`。
@@ -203,7 +203,7 @@ python3 -m unittest discover -s gui_gao/tests -v
 python3 main.py
 ```
 
-Frontend check on 10 November 2026: **55 tests passed, no skips, 7.604 seconds**, using Python 3.12.14 and real Tk windows on macOS. Checks include current enum mapping, feature-service data isolation, favorite return values, UI flows, animation controls and cleanup. Native Windows/Linux rendering and the final group demonstration machine remain unverified. The 19 backend self-check passes are historical; that suite was not rerun for this update. See [TEST_REPORT](gui_gao/TEST_REPORT.md), [requirements review](gui_gao/REQUIREMENTS_CHECK.md) and [AI-use disclosure](gui_gao/README.md#ai-use).
+Frontend check on 10 November 2026: **55 tests passed, no skips, 7.604 seconds**, using Python 3.12.14 and real Tk windows on macOS. Checks include current enum mapping, feature-service data isolation, favorite return values, UI flows, animation controls and cleanup. Native Windows/Linux rendering and the final group demonstration machine remain unverified. The 19 backend self-check passes are historical; that suite was not rerun for this update. See [TEST_REPORT](gui_gao/TEST_REPORT.md), [requirements review](gui_gao/REQUIREMENTS_CHECK.md) and [AI-use disclosure](#ai-use).
 
 后端已为测试提供全部必要条件：
 
@@ -251,16 +251,133 @@ with tempfile.TemporaryDirectory() as tmp:
 `demo_data/*.json` 已在 `.gitignore` 中，
 请勿使用 `git add .` 一次性提交所有组员文件，按目录分别提交。
 
-成员上传自己的模块后，应同步更新根 README 和 [GitHub 仓库操作指南](GitHub%20仓库操作指南) 中对应的目录、入口、验证结果与待联调事项。共用文档只改与本人交付有关的段落；不覆盖其他成员的内容。
+成员上传自己的模块后，应同步更新根 README 中对应的目录、入口、验证结果与待联调事项。共用文档只改与本人交付有关的段落；不覆盖其他成员的内容。
 
 例如前端更新，仅在确认差异后暂存：
 
 ```bash
 git status --short
-git diff -- gui_gao README.md "GitHub 仓库操作指南"
-git add -- gui_gao README.md "GitHub 仓库操作指南"
+git diff -- gui_gao README.md
+git add -- gui_gao README.md
 git diff --cached --stat
 git diff --cached
 ```
 
 确认暂存区只包含本次负责的文件，再提交和推送；推送后检查 GitHub 上目标分支及文件。上传前先同步远端，如有冲突应核对并协调，不强制覆盖队友提交。
+
+
+<a id="frontend-guide"></a>
+
+## Frontend guide
+
+### Run
+
+From the repository root, use Python 3.10 or later with Tkinter:
+
+```sh
+python3 main.py --gui
+```
+
+Create an account on first use. Production data is managed by the backend in `backend_zhang/data/`.
+
+For an isolated demo:
+
+```sh
+python3 -m gui_gao --demo
+```
+
+On macOS, double-click `gui_gao/launch_demo.command`.
+
+- Demo username: `gao_demo`; password: `Campus123`.
+- Three fictional users, eight illustrated items, saved items, public discussions, sent/received enquiries and activity records.
+- Temporary demo data is cleared on normal exit. It does not read or change production users or items.
+- For a separate practice folder, run `python3 -m gui_gao --data-dir /path/to/practice-data`. Do not run multiple processes against the same directory.
+
+### Pages and connected functions
+
+| Page | Functions | Existing service |
+|---|---|---|
+| Sign in / Register | Field validation, duplicate usernames, failed-login feedback, session cleanup | `login_user`, `register_user` |
+| Browse | Category and keyword search, price sorting, 12 items per page, empty states and retry | `search_items`, `get_public_user_info` |
+| Item details | Photo, description, price, seller, status, timestamps and owner edit link | `get_item_by_id`, `get_public_user_info` |
+| List / Edit item | Name, category, price, description, optional local photo, validation and unsaved-change prompt | `create_item`, `update_item` |
+| My listings | Own items, edit, take off sale, relist and confirmed permanent deletion | `get_items_by_seller`, `remove_item`, `restore_item`, `delete_item_permanently` |
+| Account | Display name, current-password verification and password change, activity link | `update_nickname`, `change_password` |
+| Saved items | Save/unsave available items; personal list and read-only unavailable-item history | `FavoriteService` |
+| Comments | Public item discussions, related threads, 500-character limit, draft warning | `MessageService` |
+| Enquiries | Send interest, view sent/received records, reject duplicate and self enquiries | `IntentionService` |
+| Activity log | Current user's actions, newest first, search within displayed records | `LogService` |
+
+Available and Off sale are the two existing item states. Enquiries do not make payments, reserve goods or mark items sold. Comments are public, not private messages. Success is shown only after the service saves the action. Permanent deletion cannot be undone through the GUI; the backend archive is for history only.
+
+Tab moves focus. Enter submits sign-in and search forms. On macOS, Command+1/2/3/4/N opens Browse, My listings, Account, Community and List an item. Other desktop systems use Control.
+
+### English presentation and compatibility
+
+Page text, validation, service error feedback, demo content, code comments and this module's documentation are English. `localization.py` translates the existing category/status wire values at the frontend boundary. Saving and filtering send the current team enums (`books`, `electronics`, `clothing`, `household`; `on_sale` and `off_sale` for statuses). Legacy display labels are recognized, but this update does not migrate old data or change service interfaces. User-written titles, descriptions, names and comments are preserved in their original language. Existing activity action labels are translated for display without rewriting records.
+
+Categories shown to the user are Books, Electronics, Clothing and Home & Living. Password and display-name validation still follow the team contract, including support for Chinese characters in user-entered names. Known service errors receive specific English messages; unexpected non-English errors receive a general English recovery message without exposing raw data.
+
+### Visuals and interactions
+
+- Login illustration with a lamp switch; password reveal/hide and a demo credential button.
+- Account profile preview, live item/saved/enquiry counts and a reduced-motion setting.
+- Listing form with a live card preview, field readiness, append-only description prompts and a photo checklist.
+- Saved-item availability filter, comment character count, handover checklist and activity search.
+- Enquiry route marker cycles through 1, 2 and 3. The activity clock moves its hands in steps. Both are decorative, can be paused and respect reduced motion. They do not represent a transaction state or the actual time.
+- Animation callbacks stop when the page is closed. Other artwork uses brief hover motion.
+- The photo dialog provides zoom controls, scrolling, reset and Escape to close. The Pillow-backed zoom defect remains open in [code_review.md](code_review.md). Missing photos show a placeholder.
+- Checklists are local reminders. They do not save business data or notify another user.
+
+Original layered illustrations are in `gui_gao/assets/scenes/`. The optional generator, `gui_gao/tools/build_scene_art.py`, requires Pillow and its configured font. Running the frontend uses the PNG files and does not require Pillow.
+
+### Code map
+
+```text
+main.py --gui (existing team entry point)
+  -> gui_gao.main() -> app.py, pages, widgets.py
+  -> gateway.py / localization.py -> public user and item services
+  -> feature_gateway.py -> four feature_du services via a private compatibility loader
+  -> existing backend storage
+```
+
+`app.py` manages navigation, serial background service calls and error feedback. `page_design.py`, `theme.py` and `widgets.py` contain shared presentation. `validation.py` gives immediate feedback; final permissions and validation remain with the backend. `demo.py` creates fictional data through service calls. `gui_gao/tests/` contains Gao's supplementary checks and does not replace another member's group tests.
+
+The layout draws on search/category patterns from Xianyu, image-led listings from Carousell HK and seller-management organisation from eBay Seller Hub. Site source code, logos and photos were not copied.
+
+### Errors, storage and integration limits
+
+Service calls run serially on a worker thread, keeping Tk responsive. Submission and navigation are disabled while a request runs to prevent duplicate actions. Failed item saves retain the form. Submitted passwords are cleared and never included in activity records.
+
+The frontend uses the signed-in user's ID and does not accept a user-supplied seller ID. Corrupt data produces an error; it is not silently treated as an empty database or reset. An invalid newly selected image must be replaced or removed. An existing inaccessible image path is retained when editing, avoiding unrequested data loss.
+
+Native image previews support PNG/GIF; JPEG can be supported when Pillow is already installed. Images over 20 MB or 25 million pixels are not previewed. Photos remain at their local paths, so carry them with the project when demonstrating it. The currency remains the team's existing ¥ symbol; this update does not change price units. Names are limited to 20 characters and descriptions to 200. Prices follow backend rounding, with a frontend check against rounding tiny values to zero.
+
+`feature_gateway.py` loads the actual additional-service source with module-local bindings to the gateway's user/item services and a `JsonArrayStore` facade. This keeps demo and practice validation in their selected data directories without changing global service defaults. It also normalizes the current favorite-toggle result for the UI. No teammate source or global modules are patched. See [HANDOFF](gui_gao/HANDOFF.md) for the remaining integration boundaries.
+
+Saved items, comments, enquiries and logs use the selected directory's `favorites.json`, `messages.json`, `intentions.json` and `system_logs.json`. Production records persist; demo records are temporary. The current team service blocks all favorite toggles for off-sale/deleted items. Their saved history remains visible, with no Unsave action. An off-sale item can be unsaved after its seller relists it. Comments and enquiry history remain readable; new interactions require an available item. The current enquiry service supports only creation and reading of `pending` records. No accept/reject/cancel/payment actions are invented.
+
+Activity logs show only the current user and exclude passwords and comment text. If logging fails after an action succeeds, the UI reports that the action was saved and warns against submitting it twice. This is a single-machine JSON application, not a network-authorised service. Cross-device sync, cross-process transactions, image hosting and online payments are outside its scope. Windows/Linux native desktop behaviour has not been verified.
+
+### Frontend checks
+
+Run `python3 -m unittest discover -s gui_gao/tests -v` from the repository root. Tests use temporary data and Tk tests require a graphical desktop. Historical results are recorded in [TEST_REPORT](gui_gao/TEST_REPORT.md).
+
+<a id="ai-use"></a>
+
+### AI use
+
+Codex assisted with design proposals, initial code, illustration generation, testing, documentation and the English conversion. Gao selected the functional scope and visual direction. The peer review and frontend responses are recorded in [code_review.md](code_review.md).
+
+
+## Frontend illustration assets
+
+These illustrations were drawn from geometric shapes by `gui_gao/tools/build_scene_art.py`. They do not use third-party photos, site screenshots or trademarks.
+
+Each scene has transparent `*-base.png` and `*-float.png` layers at 840 × 600 pixels. Floating layers provide short hover motion. The login floating layer is the lamp beam, initially hidden.
+
+The enquiry route and activity clock use the base PNG plus independently drawn SVG or Tk Canvas markers/hands. This allows animation, pause and reduced motion without rotating the whole illustration. They do not show transaction progress or real time.
+
+Colours are blue, navy, lime, cream and apricot. The art is decorative, not a real item photo. The browser uses the `home` scene; the desktop homepage uses a collage of item illustrations.
+
+The app reads the PNGs directly. Regeneration is optional and requires Pillow and the font configured in the generator; adjust the font path to your development machine.

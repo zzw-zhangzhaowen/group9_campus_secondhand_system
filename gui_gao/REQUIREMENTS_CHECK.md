@@ -1,6 +1,6 @@
 # Frontend requirements review
 
-This is the English edition of the review made on 4 November 2026. It preserves that review's evidence and limits; it is not a new check of Moodle, deadlines or the group's submission status. The language update on 10 November is described in `README.md`, `HANDOFF.md` and `TEST_REPORT.md`.
+This is the English edition of the review made on 4 November 2026. It preserves that review's evidence and limits; it is not a new check of Moodle, deadlines or the group's submission status. The language update on 10 November is described in the [root frontend guide](../README.md#frontend-guide), `HANDOFF.md` and `TEST_REPORT.md`.
 
 At the time of the review, Gao's frontend covered the six functional areas in the available group plan and was ready for integration review. This did not establish that the whole group project was ready to submit or guarantee a grade.
 
