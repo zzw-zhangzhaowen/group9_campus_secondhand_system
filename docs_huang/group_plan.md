@@ -1,6 +1,6 @@
 # Group Project Plan
 
-- **Project:** Campus Second-hand Marketplace (Campus Market, Design B)
+- **Project:** Campus Second-hand Marketplace (Campus Market)
 - **Course:** INT6181 Applied Programming with Python — Group Project
 - **Document version:** v1.0
 - **Status:** Working plan and delivery record
