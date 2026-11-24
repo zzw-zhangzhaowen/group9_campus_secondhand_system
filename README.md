@@ -1,140 +1,173 @@
-# 校园二手物品管理系统（campus-secondhand）
+# Campus Second-hand Marketplace (group9_campus_secondhand_system)
 
-Python + Tkinter + 本地 JSON 的校园二手交易**原型**，不涉及真实支付与云端部署。
+A **prototype** campus second-hand marketplace built with Python, Tkinter and local JSON files. It has no real payments and no cloud deployment.
 
-> 当前实现 **核心后端（backend_zhang）和 B「活力市集」图形界面（gui_gao）**，已接通登录注册、商品浏览搜索、详情、发布编辑、个人商品管理与账号设置。
-> 收藏 / 留言 / 意向 / 日志已通过前端兼容层接入根目录 `feature_du/` 的真实服务；兼容约定待负责人确认。2026-11-04 的 B 版交付包含四类附加页面、集成测试及交接说明。
-> 整组单元测试（tests_zhao）、报告与 PPT（docs_huang）仍由对应组员补充；前端自测不能替代整组最终验收。
+> Repository status (24 November 2026): the backend `backend_zhang`, the Design B "Campus Market" frontend `gui_gao`, the auxiliary services `feature_du`, the group test suite `test_zhao` and the documentation and review folder `docs_huang` are all in the repository.
+> Verified on 24 November 2026 on Windows with Python 3.13.18: the backend self-check passed 19 checks; `python -m unittest test_zhao.test_all` ran 31 tests and all passed (4.1 s); the frontend suite ran 56 tests, 36 passed and 20 Tk-window cases were skipped because that session had no interactive desktop (18.1 s).
 
-前端使用说明见 [frontend guide](#frontend-guide)，交接事项见 [gui_gao/HANDOFF.md](gui_gao/HANDOFF.md)，检查记录见 [gui_gao/TEST_REPORT.md](gui_gao/TEST_REPORT.md)。
+
+See the [frontend guide](#frontend-guide) for frontend instructions, [gui_gao/HANDOFF.md](gui_gao/HANDOFF.md) for handover notes, [gui_gao/TEST_REPORT.md](gui_gao/TEST_REPORT.md) for frontend checks and [test_zhao/auto_test_record.md](test_zhao/auto_test_record.md) for the group test record.
 
 ---
 
-## 1. 目录结构
+## 1. Directory layout
 
-以下为小组约定结构：`tests_zhao/`、`docs_huang/` 尚待对应成员提交，`demo_data/` 由后端演示命令生成。
+The tree below reflects the repository as it stands. Runtime JSON under `backend_zhang/data/` and `demo_data/` is not committed.
 
 ```
 campus-secondhand/
-├── backend_zhang/            # 核心后端（ZHANG ZHAOWEN）
+├── backend_zhang/            # Core backend (ZHANG ZHAOWEN)
 │   ├── __init__.py
-│   ├── config.py             # 数据路径、分类、状态、排序白名单、哈希参数
-│   ├── exceptions.py         # 统一异常类型
-│   ├── response.py           # 统一返回格式 success() / failure()
-│   ├── json_store.py         # 数据访问层：原子写入、文件锁、损坏检测
-│   ├── security.py           # 密码哈希（PBKDF2 + 随机盐）
-│   ├── validators.py         # 字段校验
-│   ├── user_repository.py    # 用户数据访问
-│   ├── item_repository.py    # 商品数据访问
-│   ├── item_archive.py       # 已删商品只读归档（items_deleted.json）
-│   ├── id_sequence.py        # 商品 ID 计数器（items_meta.json，严格单调）
-│   ├── user_service.py       # 用户服务层（公开接口）
-│   ├── item_service.py       # 商品服务层（公开接口）
-│   └── data/
+│   ├── config.py             # Data paths, categories, statuses, sort whitelist, hashing parameters
+│   ├── exceptions.py         # Shared exception types
+│   ├── response.py           # Uniform result format: success() / failure()
+│   ├── json_store.py         # Data access: atomic writes, file locks, corruption detection, transaction()
+│   ├── security.py           # Password hashing (PBKDF2 + random salt)
+│   ├── validators.py         # Field validation
+│   ├── user_repository.py    # User data access
+│   ├── item_repository.py    # Item data access
+│   ├── item_archive.py       # Read-only archive of deleted items (items_deleted.json)
+│   ├── id_sequence.py        # Item ID counter (items_meta.json, strictly monotonic)
+│   ├── user_service.py       # User service layer: public functions + UserService
+│   ├── item_service.py       # Item service layer: public functions + ItemService
+│   └── data/                 # Runtime data (production JSON is gitignored)
 │       ├── users.example.json
 │       ├── items.example.json
 │       ├── items_deleted.example.json
-│       └── items_meta.example.json
-├── feature_du/               # 收藏 / 留言 / 意向 / 日志（DU YI）
-├── gui_gao/                  # Tkinter 界面（GAO JINGYAN）
-│   ├── __init__.py           # main()，供根入口调用
-│   ├── __main__.py           # 独立演示 / 独立数据目录入口
-│   ├── app.py                # 窗口、导航、后台任务、错误反馈
-│   ├── gateway.py            # 调用后端公开服务接口
+│       ├── items_meta.example.json
+│       └── users.json …      # Locally generated production data, not committed
+├── feature_du/               # Auxiliary services (DU YI)
+│   ├── __init__.py
+│   ├── favorites.py          # FavoriteService: toggle_favorite / get_user_favorites
+│   ├── intentions.py         # IntentionService: create_intention / get_user_intentions
+│   ├── messages.py           # MessageService: add_message / get_item_messages
+│   └── logs.py               # LogService: log_action / get_logs
+├── gui_gao/                  # Tkinter interface (GAO JINGYAN)
+│   ├── __init__.py           # main(), called by the root entry point
+│   ├── __main__.py           # Standalone demo / custom data directory entry
+│   ├── app.py                # Window, navigation, background tasks, error feedback
+│   ├── gateway.py            # Calls the public backend services
+│   ├── feature_gateway.py    # Module-local frontend compatibility loader for feature_du
 │   ├── localization.py       # English labels and current backend enum mapping
-│   ├── feature_gateway.py    # 附加服务的前端局部兼容
-│   ├── interaction_page.py   # 收藏 / 留言 / 意向 / 个人日志
+│   ├── lifecycle.py          # Releases widget-owned Tcl variables on page destruction
+│   ├── interaction_page.py   # Saved items / comments / enquiries / personal activity
 │   ├── login_page.py
 │   ├── home_page.py
 │   ├── item_page.py
 │   ├── publish_page.py
 │   ├── account_page.py
-│   ├── page_design.py        # 页面横幅、登录插画和统计快捷入口
+│   ├── page_design.py        # Page banners, sign-in illustration and statistic shortcuts
 │   ├── theme.py / widgets.py / validation.py
-│   ├── demo.py / assets/     # 虚构演示数据及原创示意图
-│   ├── assets/scenes/       # 各页面原创分层插画 PNG
-│   ├── tools/              # 可选插画生成工具（运行前端不需要）
-│   ├── tests/               # 前端补充测试，不替代 tests_zhao
+│   ├── demo.py               # Fictional demo data created through service calls
+│   ├── assets/               # Eight original item illustration PNGs
+│   ├── assets/scenes/        # Nine layered page illustrations (*-base / *-float, 840 × 600)
+│   ├── tools/                # Optional illustration generator (not needed to run the frontend)
+│   ├── tests/                # Supplementary frontend tests (test_ui / test_gateway / test_features / test_localization)
 │   ├── launch_demo.command   # macOS isolated demo launcher
-│   └── HANDOFF.md / TEST_REPORT.md
-├── test_zhao/                    # 整组单元测试与测试文档模块（ZHAO XIAOJUN）
-│   ├──__init__.py
-│   ├──test_all.py               # 集成自动化测试入口：unittest，用户/商品/收藏/意向/留言全套用例，隔离临时 JSON
-│   ├── API_spec.md               # 接口规范文档：后端全部接口定义、入参、返回结构、校验规则、错误文案
-│   ├──test_strategy.md          # 测试策略文档：测试目标、范围、环境、准入准出标准、分工、风险预案
-│   ├──auto_test_record.md       # 自动化测试记录：执行日志、缺陷清单、修复复测记录、测试结果汇总
-├── docs_huang/               # 报告与 PPT（HUANG BAIQI）
-├── demo_data/                # 演示数据（python main.py --demo 生成）
+│   ├── 启动演示.command       # Chinese-named compatibility shortcut to the historical launcher
+│   ├── .gitignore
+│   └── HANDOFF.md / TEST_REPORT.md / REQUIREMENTS_CHECK.md
+├── test_zhao/                # Group unit tests and test documentation (ZHAO XIAOJUN)
+│   ├── __init__.py
+│   ├── test_all.py            # unittest entry: users / items / favorites / intentions / messages + review regressions
+│   ├── API_spec.md            # API specification (4 November 2026)
+│   ├── test_strategy.md       # Test strategy (5 November 2026)
+│   ├── auto_test_record.md    # Test record: run-by-run log, five blocking defects (B-001 to B-005), final regression
+│   └── image.png / image-1.png / image-2.png   # Test-run screenshots
+├── docs_huang/               # Documentation and reviews (HUANG BAIQI)
+│   ├── prd.md                # PRD v1.0 (English edition, 19 November 2026, 17 chapters)
+│   ├── code_review/
+│   │   ├── code_review.md    # Frontend, backend, integration and group-test reviews
+│   │   └── code_review_screenshots/   # Four review screenshots
+│   ├── group_plan.md         # group plan
+│   ├── AI_usage.md           # AI usage statement
+│   └── psd.md                # Project Specification Document
 ├── contracts/
-│   ├── backend_api.md        # 后端接口契约
-│   └── data_schema.md        # 数据格式契约
+│   ├── backend_api.md        # Backend API contract v1.3
+│   └── data_schema.md        # Data format contract
+├── demo_data/                # Demo data (created by python main.py --demo, gitignored)
 ├── .gitignore
 ├── README.md
-└── main.py                   # 入口：--check / --demo / --gui
+└── main.py                   # Entry point: self-check by default / --demo / --gui
 ```
 
 ---
 
-## 2. 运行
+## 2. Running the application
 
-要求：Python 3.10+。图形界面需要 Tkinter 和图形桌面；核心功能及 PNG/GIF 预览仅用标准库，无需 pip install。若本机 `python3` 不是此版本，请换用已安装的 Python 3.10+ 解释器。以下命令均在仓库根目录运行。
+Python 3.10 or later is required. The repository was verified on Windows with Python 3.13.18 (24 November 2026). The GUI needs Tkinter and a graphical desktop; core features and PNG/GIF previews use only the standard library, so no `pip install` is needed. If the local `python3` is not a suitable version, use another installed Python 3.10+ interpreter, and on Windows replace `python3` with `python`. Run all commands from the repository root.
 
 ```bash
-# 后端自检（临时数据，19 项检查，不碰正式数据）
+# Backend self-check (temporary data, 19 checks, production data untouched)
 python3 main.py
 
-# 后端业务演示（写 demo_data/，每次运行前自动清空）
+# Backend business demo (writes demo_data/, cleared before each run)
 python3 main.py --demo
 
-# 启动正式图形界面（现有 gui_gao.main() 已接通）
+# Launch the production GUI (gui_gao.main() is connected)
 python3 main.py --gui
 
-# 推荐先用独立前端演示（临时数据，正常关闭后清理）
+# Recommended first step: isolated frontend demo (temporary data, cleared on normal exit)
 python3 -m gui_gao --demo
 
-# 将练习数据保存在自己选择的独立目录（按需运行）
+# Keep practice data in a separate directory (optional)
 python3 -m gui_gao --data-dir ./my_practice_data
+
+# Group unit tests (31 cases, temporary directory, production data untouched)
+python3 -m unittest test_zhao.test_all
+
+# Supplementary frontend tests (Tk-window cases need a desktop and are skipped without one)
+python3 -m unittest discover -s gui_gao/tests
 ```
 
-正式模式没有预设账号，请先注册。独立前端演示账号为 `gao_demo`，密码为 `Campus123`；其他演示用户和商品也都是虚构数据。前端演示使用系统临时目录，与后端的 `main.py --demo` 分开；自选练习目录会保留数据，请勿提交其 JSON 文件。
+Production mode has no preset accounts, so register first. The isolated frontend demo account is `gao_demo` with password `Campus123`; the other demo users and items are fictional. The frontend demo uses a system temporary directory and is separate from the backend `main.py --demo`; a custom practice directory keeps its data, so do not commit its JSON files.
 
-Mac: open `gui_gao/launch_demo.command`; the historical `gui_gao/启动演示.command` remains a compatibility shortcut. 旧的可选 `.app` 启动器因重复打开曾报错且功能重复，已从版本管理移除；保留命令行与 `.command` 两种入口，均需要本机 Python/Tkinter。JPEG 预览可由环境中已有的 Pillow 增强，但 Pillow 不是必需依赖。See the frontend guide below.
+Mac: open `gui_gao/launch_demo.command`. The historical `gui_gao/启动演示.command` remains a compatibility shortcut. The optional `.app` launcher was removed from version control because it opened duplicate windows and duplicated existing entry points; the command line and `.command` launches both remain and require local Python/Tkinter. JPEG previews can be enhanced by Pillow when it is already installed, but Pillow is not a required dependency. See the frontend guide below.
 
-首次调用任何接口时，`backend_zhang/data/` 下的 `users.json`、`items.json`、`items_deleted.json`
-会自动创建为空数组 `[]`，`items_meta.json` 自动创建为 `{"next_item_id": 1}`。
+On the first call to any interface, `users.json`, `items.json` and `items_deleted.json` under `backend_zhang/data/` are created as empty arrays `[]`, and `items_meta.json` is created as `{"next_item_id": 1}`.
 
 ---
 
-## 3. 架构分层
+## 3. Architecture
 
 ```
 GUI / feature_du
-      │  只能调用公开接口（统一返回格式）
+      │  The GUI calls public interfaces only; feature_du reuses json_store's
+      │  atomic storage and manages its own data files
       ▼
-服务层      user_service.py / item_service.py
+Service layer   user_service.py / item_service.py
       ▼
-业务逻辑    校验(validators) → 权限 → 状态流转 → 返回结果(response)
+Business rules  validation (validators) → permissions → state transitions → result (response)
       ▼
-数据访问    user_repository / item_repository / item_archive / id_sequence → json_store
+Data access     user_repository / item_repository / item_archive / id_sequence → json_store
       ▼
-JSON 文件   users.json / items.json / items_deleted.json（只读归档）/ items_meta.json（ID 计数器）
+JSON files      users.json / items.json / items_deleted.json (read-only archive) /
+                items_meta.json (ID counter), plus the auxiliary services'
+                favorites.json / intentions.json / messages.json / logs.json
 ```
 
-- 服务层公开函数统一返回 `{"success", "message", "data"}`；
-- 内部函数以下划线开头（`_load_users`、`_save_users`、`_hash_password`、`_verify_password`、`_find_user_internal`、`_find_item_internal` 等），**不对外提供**；
-- 权限判断、搜索逻辑、状态修改全部在后端执行，GUI 不得自行实现。
+- Public service functions always return `{"success", "message", "data"}`.
+- Internal helpers start with an underscore (`_load_users`, `_save_users`, `_hash_password`, `_verify_password`, `_find_user_internal`, `_find_item_internal` and similar) and are **not exposed**.
+- Permission checks, search logic and state changes run in the backend; the GUI must not reimplement them.
 
 ---
 
-## 4. 接口一览（详见 `contracts/backend_api.md`）
+## 4. Interfaces (contracts in `contracts/backend_api.md` and `contracts/data_schema.md`, per-interface detail in `test_zhao/API_spec.md`)
 
-用户：`register_user` / `login_user` / `get_user_by_id` / `get_public_user_info` /
+Users: `register_user` / `login_user` / `get_user_by_id` / `get_public_user_info` /
 `update_nickname` / `change_password` / `user_exists` / `to_safe_dict`
 
-商品：`create_item` / `get_all_items` / `get_item_by_id` / `get_items_by_seller` /
+Items: `create_item` / `get_all_items` / `get_item_by_id` / `get_items_by_seller` /
 `update_item` / `remove_item` / `restore_item` / `delete_item_permanently` /
 `search_items` / `item_exists` / `is_item_active` / `get_item_status` / `get_public_item_info` /
 `is_item_deleted` / `list_deleted_items`
+
+Auxiliary services (`feature_du/`): `FavoriteService.toggle_favorite` / `get_user_favorites`,
+`IntentionService.create_intention` / `get_user_intentions`,
+`MessageService.add_message` / `get_item_messages`,
+`LogService.log_action` / `get_logs`
+
+`reset_user_service()` / `reset_item_service()` let tests and demos switch data directories without changing business rules.
 
 ```python
 from backend_zhang.user_service import login_user
@@ -145,23 +178,29 @@ if result["success"]:
     print(result["data"]["nickname"])
 
 if is_item_active(1)["data"]:
-    ...  # 商品存在且在售，可提交意向
+    ...  # The item exists and is on sale, so an enquiry may be sent
 
-record = is_item_deleted(2)["data"]   # 商品已删除？用快照显示历史标题
+record = is_item_deleted(2)["data"]   # Was the item deleted? Show its historical title
 if record["deleted"]:
     print(record["name"], record["deleted_at"])
 ```
 
----
-### 互動與記錄模組（feature_du，杜毅負責）
-- **收藏 (Favorites)**：管理使用者商品收藏狀態切換與清單讀取。
-- **留言 (Messages)**：處理商品留言互動與紀錄。
-- **意向 (Intentions)**：管理買家購買意向的提交與狀態。
-- **日誌 (Logs)**：記錄系統核心操作足跡。
+### 4.1 Auxiliary services (feature_du — DU YI)
+
+| Module | File | Public methods | Default data file (when `data_file` is omitted) |
+|---|---|---|---|
+| Favorites | `favorites.py` | `toggle_favorite` / `get_user_favorites` | `backend_zhang/data/favorites.json` |
+| Intentions | `intentions.py` | `create_intention` / `get_user_intentions` | `backend_zhang/data/intentions.json` |
+| Messages | `messages.py` | `add_message` / `get_item_messages` | `backend_zhang/data/messages.json` |
+| Logs | `logs.py` | `log_action` / `get_logs` | `backend_zhang/data/logs.json` |
+
+- All four services store through `JsonArrayStore`, keeping atomic replacement and file locking, and return the same `{"success", "message", "data"}` shape.
+- The frontend compatibility layer (`gui_gao/feature_gateway.py`) writes logs to `system_logs.json` in the selected data directory; the other three keep their own file names.
+- The intention service currently creates and reads `pending` records only. It has no accept, reject, cancel or payment states.
 
 Frontend integration with root `feature_du/` uses Gao's module-local service bindings and storage facade. This preserves isolated demo/practice data without changing teammate source or global defaults. The four Community pages call the real services. Current restrictions and remaining coordination are recorded in [HANDOFF](gui_gao/HANDOFF.md).
 
-### Frontend (gui_gao — GAO JINGYAN)
+### 4.2 Frontend (gui_gao — GAO JINGYAN)
 
 13 November Tkinter update: platform font fallback, rounded B-style banners and statistic panels, refined login/listing layouts and visible animation controls. Widget-owned Tcl variables are released on the UI thread during destruction. All 56 frontend tests passed with automatic garbage collection enabled on macOS / Python 3.12 (11.355 seconds). See `gui_gao/TEST_REPORT.md` for details.
 
@@ -172,40 +211,53 @@ Frontend integration with root `feature_du/` uses Gao's module-local service bin
 - The frontend binds feature validation to the selected gateway data directory and normalizes the latest favorite result. Off-sale/deleted saved items remain visible as read-only history; the current service does not allow unsaving them. Enquiries support creation/query, without payment, acceptance, cancellation or sold-state actions.
 - Core mutations and permissions stay with public backend services. Work runs off the Tk UI thread with duplicate-submit protection, errors, draft warnings and deletion confirmation. The local browser prototype is a separate sample-data design preview and is not part of this repository delivery.
 
-## 5. 数据安全要点
+## 5. Data safety
 
-| 项目 | 做法 |
+| Area | Approach |
 |---|---|
-| 密码存储 | PBKDF2-HMAC-SHA256，120000 轮，每人随机盐，不保存明文 |
-| 密码比较 | `hmac.compare_digest` 定时安全比较 |
-| 登录提示 | 统一"用户名或密码错误"，不泄露账号是否存在 |
-| 公开信息 | 用户只返回 `id/username/nickname`，绝不返回 `password_hash` / `password_salt` |
-| 脱敏兜底 | `to_safe_dict(user)` 剔除所有 `password*` 字段，供日志/调试输出使用 |
-| 返回副本 | `success()` / `failure()` 对 data 做深拷贝，防止外部改内存对象 |
-| 排序注入 | 排序字段白名单校验（`created_at` / `updated_at` / `price`） |
-| JSON 损坏 | 抛明确错误 + 返回 `success=false`，不崩溃、不自动覆盖原文件 |
-| 写入保护 | 同一文件按绝对路径共享 `threading.RLock`；`mkstemp` 唯一临时文件 + `fsync` + `os.replace` 原子替换 |
-| 数据隔离 | 正式数据在 `backend_zhang/data/`；后端演示写 `demo_data/`；前端 `--demo` 和自检用临时目录，前端 `--data-dir` 可指定独立练习目录 |
-| 删除可追溯 | 彻底删除前写 `items_deleted.json` 快照，归档只追加、只读，无法据此恢复商品；归档写失败则不执行删除 |
-| ID 不复用 | 商品 ID 由 `items_meta.json` 计数器发号，下限含「现有最大 ID + 1」与「归档最大 ID + 1」，删除后不复用、计数器丢失也不撞号 |
+| Password storage | PBKDF2-HMAC-SHA256, 120,000 iterations, a random salt per user, no plaintext stored |
+| Password comparison | Timing-safe comparison with `hmac.compare_digest` |
+| Sign-in feedback | A single "invalid username or password" message, so account existence is not revealed |
+| Public data | Users expose only `id/username/nickname`; `password_hash` and `password_salt` are never returned |
+| Redaction fallback | `to_safe_dict(user)` strips every `password*` field for logging and debugging |
+| Returned copies | `success()` / `failure()` deep-copy `data`, so callers cannot mutate service memory |
+| Sort injection | Sortable fields are checked against a whitelist (`created_at` / `updated_at` / `price`) |
+| Corrupt JSON | An explicit error and `success=false`; no crash and no overwrite of the original file (invalid UTF-8 counts as corruption; fixed 18 November 2026) |
+| Write protection | One `threading.RLock` per absolute path; a unique `mkstemp` temporary file, then `fsync` and `os.replace` |
+| Data isolation | Production data sits in `backend_zhang/data/`; the backend demo uses `demo_data/`; the frontend `--demo` and self-checks use temporary directories, and `--data-dir` selects a practice directory; favorites, intentions, messages and logs each keep their own file and never write to `users.json` or `items.json` |
+| Deletion traceability | A snapshot is written to `items_deleted.json` before permanent deletion; the archive is append-only and read-only, and items cannot be restored from it; deletion aborts if the archive write fails |
+| ID reuse | Item IDs come from the `items_meta.json` counter, floored at both "current maximum ID + 1" and "archived maximum ID + 1"; deleted IDs are never reused and a lost counter cannot cause collisions |
 
 ---
 
-## 6. 测试与验证范围
+## 6. Test and verification scope
 
-整组单元测试由 **ZHAO XIAOJUN** 负责，代码放在 `test_zhao/`。Gao 的前端补充测试放在 `gui_gao/tests/`，不替代整组测试分工。
+**ZHAO XIAOJUN** owns the group unit tests in `test_zhao/`; the strategy, API specification and execution record are `test_strategy.md`, `API_spec.md` and `auto_test_record.md`. Gao's supplementary frontend tests live in `gui_gao/tests/` and do not replace the group test allocation.
+
+Local verification on 24 November 2026 (Windows, Python 3.13.18):
+
+| Command | Scope | Result |
+|---|---|---|
+| `python main.py` | Backend self-check, temporary data | All 19 checks passed |
+| `python -m unittest test_zhao.test_all` | Group unit tests | All 31 cases passed, 4.106 s |
+| `python -m unittest discover -s gui_gao/tests` | Supplementary frontend tests | 56 cases run: 36 passed, 20 Tk-window cases skipped (no interactive desktop), 18.115 s |
+
+The 31 cases in `test_all.py` are 8 user cases, 6 item cases, 9 favorites/intentions/messages cases and 8 review regressions (3 price-rounding boundaries, 3 invalid UTF-8 cases and 2 archive-rollback failures). The first 23 match the final regression in `auto_test_record.md`; the last 8 verify the fixes for Issues 3, 4 and 5 in `docs_huang/code_review/code_review.md`.
 
 ```bash
-# 前端及后端连接检查（使用临时数据；Tk 测试需要图形桌面）
+# Supplementary frontend tests (temporary data; Tk-window cases need a desktop)
 python3 -m unittest discover -s gui_gao/tests -v
 
-# 原有后端自检（使用临时数据）
+# Group unit tests (temporary data)
+python3 -m unittest test_zhao.test_all -v
+
+# Backend self-check (temporary data)
 python3 main.py
 ```
 
-Frontend check on 10 November 2026: **55 tests passed, no skips, 7.604 seconds**, using Python 3.12.14 and real Tk windows on macOS. Checks include current enum mapping, feature-service data isolation, favorite return values, UI flows, animation controls and cleanup. Native Windows/Linux rendering and the final group demonstration machine remain unverified. The 19 backend self-check passes are historical; that suite was not rerun for this update. See [TEST_REPORT](gui_gao/TEST_REPORT.md), [requirements review](gui_gao/REQUIREMENTS_CHECK.md) and [AI-use disclosure](#ai-use).
+Frontend check on 10 November 2026: **55 tests passed, no skips, 7.604 seconds**, using Python 3.12.14 and real Tk windows on macOS. The 13 November update recorded **56 tests passed in 11.355 seconds**; the 24 November Windows run executed 56 tests with 36 passed and 20 Tk-window cases skipped (18.115 seconds), because that session had no interactive desktop. Checks include current enum mapping, feature-service data isolation, favorite return values, UI flows, animation controls and cleanup. Native Windows/Linux rendering and the final group demonstration machine remain unverified. See [TEST_REPORT](gui_gao/TEST_REPORT.md), [requirements review](gui_gao/REQUIREMENTS_CHECK.md), [test record](test_zhao/auto_test_record.md) and [AI-use disclosure](#ai-use).
 
-后端已为测试提供全部必要条件：
+The backend already provides everything the tests need:
 
 ```python
 import os, tempfile
@@ -216,44 +268,46 @@ from backend_zhang.user_repository import UserRepository
 with tempfile.TemporaryDirectory() as tmp:
     users_file = os.path.join(tmp, "users.json")
     items_file = os.path.join(tmp, "items.json")
-    user_service = UserService(users_file)                       # 数据路径可配置
+    user_service = UserService(users_file)                       # Data paths are configurable
     item_service = ItemService(items_file, UserRepository(users_file))
-    # 归档 items_deleted.json 会自动落在 items_file 同目录，测试天然隔离；
-    # 也可显式 ItemService(items_file, repo, deleted_file=...)
+    # The archive items_deleted.json is placed beside items_file, so tests isolate naturally;
+    # ItemService(items_file, repo, deleted_file=...) also sets it explicitly.
 
-    user_service.register("student_01", "abcd1234", "小明")
+    user_service.register("student_01", "abcd1234", "Ming")
 ```
 
-- 接口已验证：成功 / 失败都返回 `{"success", "message", "data"}`，断言只需看 `success` 与 `message`；
-- 所有字段限制、权限规则、状态流转的返回值见 `contracts/backend_api.md`；
-- 时间字段可通过注入时间来源断言（服务层时间来自 `backend_zhang.json_store.now_text`）。
+- Responses were verified: both success and failure return `{"success", "message", "data"}`, so assertions only need `success` and `message`.
+- Every field limit, permission rule and state transition is documented in `contracts/backend_api.md`.
+- Time fields can be asserted by injecting the time source; service-level time comes from `backend_zhang.json_store.now_text`.
 
-整组测试提交时，示例数据模板可放在 `tests_zhao/fixtures/`，不要提交真实用户或交易数据。
-
----
-
-## 7. 已知限制
-
-1. 用户 ID 仍取「现有最大 ID + 1」（当前版本不支持删除用户，无复用问题）；
-   商品 ID 已在 v1.3 改为计数器发号，严格单调、删除后不复用。
-2. 用户名唯一性检查在文件锁内完成，适用于单机单进程；多进程并发写同一文件不在本项目范围。
-3. `image_path` 仅保存字符串，不做存在性校验、不做图片处理。
-4. 未实现用户删除、管理员权限、在线支付、云端部署（符合需求文档范围）。
-5. `items_deleted.json` 会随删除次数增长，当前不做清理/分页归档（`list_deleted_items` 上限 500 条/次）。
-6. 商品发布若在"已发号、未写入"之间异常，会留下空号（跳号）；`items_meta.json` 损坏时发布会失败并提示修复，
-   均为"唯一 + 单调"的代价与保护，不影响既有数据。
+When submitting group tests, sample data templates belong in `test_zhao/fixtures/`; never commit real user or transaction data.
 
 ---
 
-## 8. Git 提交约定
+## 7. Known limitations
 
-`backend_zhang/data/users.json`、`items.json`、`items_deleted.json`、`items_meta.json`、
-`demo_data/*.json` 已在 `.gitignore` 中，
-请勿使用 `git add .` 一次性提交所有组员文件，按目录分别提交。
+1. User IDs still use "current maximum ID + 1". Users cannot be deleted in this version, so IDs are not reused. Item IDs moved to a counter in v1.3, so they are strictly monotonic and never reused after deletion.
+2. Username uniqueness is checked inside the file lock, which assumes one machine and one process. Concurrent multi-process writes to the same file are out of scope.
+3. `image_path` stores only a string. The path is not checked for existence and the image is not processed.
+4. User deletion, administrator roles, online payments and cloud deployment are not implemented, in line with the requirements document.
+5. `items_deleted.json` grows with every deletion. There is no cleanup or paginated archive (`list_deleted_items` caps at 500 records per call).
+6. If an exception occurs between issuing an item ID and writing the item, the ID is skipped; a corrupt `items_meta.json` makes publishing fail with a repair hint. Both are the cost and guard of "unique + monotonic" and do not affect existing data.
+7. `LogService` in `feature_du/logs.py` is implemented and wired into the frontend, but the `test_zhao` suite covers only favorites, intentions and messages (the log module was not runnable when the test strategy was written). The log service has no dedicated unit tests yet.
+8. The review records two non-blocking risks: incomplete input validation in the auxiliary services, and intention-ID generation that could duplicate IDs in extreme cases. Current cases do not trigger either, and by agreement both are deferred to a later version rather than changed in this delivery.
 
-成员上传自己的模块后，应同步更新根 README 中对应的目录、入口、验证结果与待联调事项。共用文档只改与本人交付有关的段落；不覆盖其他成员的内容。
+---
 
-例如前端更新，仅在确认差异后暂存：
+## 8. Git conventions
+
+`backend_zhang/data/users.json`, `items.json`, `items_deleted.json` and `items_meta.json`,
+`backend_zhang/data/{favorites,messages,intentions,system_logs}.json` and
+`demo_data/*.json` are listed in `.gitignore`;
+the default log path `backend_zhang/data/logs.json` is not ignored yet, so add a rule before switching to it.
+Do not use `git add .` to stage every member's files at once; commit directory by directory.
+
+After uploading a module, each member should update the matching directory, entry point, verification result and integration notes in the root README. For shared documents, change only the sections tied to your own delivery and do not overwrite other members' content.
+
+For a frontend update, for example, stage only after confirming the diff:
 
 ```bash
 git status --short
@@ -263,7 +317,22 @@ git diff --cached --stat
 git diff --cached
 ```
 
-确认暂存区只包含本次负责的文件，再提交和推送；推送后检查 GitHub 上目标分支及文件。上传前先同步远端，如有冲突应核对并协调，不强制覆盖队友提交。
+Confirm the staged set contains only the files you own, then commit and push; after pushing, check the target branch and files on GitHub. Sync with the remote before uploading, review conflicts and coordinate rather than force-overwriting a teammate's commits.
+
+---
+
+## 9. Documentation index
+
+| Document | Location | Status |
+|---|---|---|
+| Product requirements document, PRD v1.0 | `docs_huang/prd.md` | Committed, English edition, 17 chapters, 19 November 2026 |
+| Code review record | `docs_huang/code_review/code_review.md` | Committed; frontend, backend, integration and group-test reviews plus four screenshots |
+| Backend API contract v1.3 | `contracts/backend_api.md` | Committed |
+| Data format contract | `contracts/data_schema.md` | Committed |
+| Test strategy, API specification, test record | `test_zhao/test_strategy.md`, `API_spec.md`, `auto_test_record.md` | Committed |
+| Frontend handoff, verification, requirements review | `gui_gao/HANDOFF.md`, `TEST_REPORT.md`, `REQUIREMENTS_CHECK.md` | Committed |
+| Group plan, AI-use note, PSD | `docs_huang/group_plan.md`, `AI_usage.md`, `psd.md` | Empty placeholders, to be completed |
+| Formal report and slides | Not in the repository | Not submitted |
 
 
 <a id="frontend-guide"></a>
@@ -326,7 +395,7 @@ Categories shown to the user are Books, Electronics, Clothing and Home & Living.
 - Saved-item availability filter, comment character count, handover checklist and activity search.
 - Enquiry route marker cycles through 1, 2 and 3. The activity clock moves its hands in steps. Both are decorative, can be paused and respect reduced motion. They do not represent a transaction state or the actual time.
 - Animation callbacks stop when the page is closed. Other artwork uses brief hover motion.
-- The photo dialog provides zoom controls, scrolling, reset and Escape to close. The Pillow-backed zoom defect remains open in [code_review.md](code_review.md). Missing photos show a placeholder.
+- The photo dialog provides zoom controls, scrolling, reset and Escape to close. The Pillow-backed zoom defect remains open in [docs_huang/code_review/code_review.md](docs_huang/code_review/code_review.md) (Issue 3-1). Missing photos show a placeholder.
 - Checklists are local reminders. They do not save business data or notify another user.
 
 Original layered illustrations are in `gui_gao/assets/scenes/`. The optional generator, `gui_gao/tools/build_scene_art.py`, requires Pillow and its configured font. Running the frontend uses the PNG files and does not require Pillow.
@@ -357,17 +426,17 @@ Native image previews support PNG/GIF; JPEG can be supported when Pillow is alre
 
 Saved items, comments, enquiries and logs use the selected directory's `favorites.json`, `messages.json`, `intentions.json` and `system_logs.json`. Production records persist; demo records are temporary. The current team service blocks all favorite toggles for off-sale/deleted items. Their saved history remains visible, with no Unsave action. An off-sale item can be unsaved after its seller relists it. Comments and enquiry history remain readable; new interactions require an available item. The current enquiry service supports only creation and reading of `pending` records. No accept/reject/cancel/payment actions are invented.
 
-Activity logs show only the current user and exclude passwords and comment text. If logging fails after an action succeeds, the UI reports that the action was saved and warns against submitting it twice. This is a single-machine JSON application, not a network-authorised service. Cross-device sync, cross-process transactions, image hosting and online payments are outside its scope. Windows/Linux native desktop behaviour has not been verified.
+Activity logs show only the current user and exclude passwords and comment text. If logging fails after an action succeeds, the UI reports that the action was saved and warns against submitting it twice. This is a single-machine JSON application, not a network-authorised service. Cross-device sync, cross-process transactions, image hosting and online payments are outside its scope. Windows/Linux visual rendering has not been inspected; the 24 November 2026 Windows run covered logic and non-Tk checks, with Tk-window cases skipped.
 
 ### Frontend checks
 
-Run `python3 -m unittest discover -s gui_gao/tests -v` from the repository root. Tests use temporary data and Tk tests require a graphical desktop. Historical results are recorded in [TEST_REPORT](gui_gao/TEST_REPORT.md).
+Run `python3 -m unittest discover -s gui_gao/tests -v` from the repository root. Tests use temporary data and Tk tests require a graphical desktop. Historical results are recorded in [TEST_REPORT](gui_gao/TEST_REPORT.md); the latest local run is summarised in [section 6](#6-test-and-verification-scope).
 
 <a id="ai-use"></a>
 
 ### AI use
 
-Codex assisted with design proposals, initial code, illustration generation, testing, documentation and the English conversion. Gao selected the functional scope and visual direction. The peer review and frontend responses are recorded in [code_review.md](code_review.md).
+Codex assisted with design proposals, initial code, illustration generation, testing, documentation and the English conversion. Gao selected the functional scope and visual direction. The frontend, backend, integration and group-test reviews with the frontend responses are recorded in [docs_huang/code_review/code_review.md](docs_huang/code_review/code_review.md).
 
 
 ## Frontend illustration assets
