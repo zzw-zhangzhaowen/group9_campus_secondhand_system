@@ -76,9 +76,7 @@ campus-secondhand/
 │   └── image.png / image-1.png / image-2.png   # Test-run screenshots
 ├── docs_huang/               # Documentation and reviews (HUANG BAIQI)
 │   ├── prd.md                # PRD v1.0 (English edition, 19 November 2026, 17 chapters)
-│   ├── code_review/
-│   │   ├── code_review.md    # Frontend, backend, integration and group-test reviews
-│   │   └── code_review_screenshots/   # Four review screenshots
+│   ├── code_review.md    # Frontend, backend, integration and group-test reviews
 │   ├── group_plan.md         # group plan
 │   ├── AI_usage.md           # AI usage statement
 │   └── psd.md                # Project Specification Document
